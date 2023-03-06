@@ -15,7 +15,7 @@ Adding items
 Lootr is organized as a tree. Get a new instance, and add items.
 
 ```rust
-let mut loot = Lootr::new();
+let mut loot = Lootr::default();
 
 loot.add(Item::a("Berries"));
 ```

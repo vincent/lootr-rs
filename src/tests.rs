@@ -29,7 +29,7 @@ mod tests {
 
     #[test]
     fn success_add_item() {
-        let mut loot = Lootr::new();
+        let mut loot = Lootr::default();
 
         loot.add(Item::a("Staff"));
 
@@ -38,7 +38,7 @@ mod tests {
 
     #[test]
     fn success_add_branch() {
-        let mut loot = Lootr::new();
+        let mut loot = Lootr::default();
 
         loot.add_branch(
             "weapons",
@@ -53,10 +53,10 @@ mod tests {
 
     #[test]
     fn success_get_branch() {
-        let mut loot = Lootr::new();
-        let mut weapons = Lootr::new();
-        let mut deadly = Lootr::new();
-        let mut fire = Lootr::new();
+        let mut loot = Lootr::default();
+        let mut weapons = Lootr::default();
+        let mut deadly = Lootr::default();
+        let mut fire = Lootr::default();
 
         fire.add(Item::an("Uzi"));
 
@@ -70,9 +70,9 @@ mod tests {
 
     #[test]
     fn success_add_item_in_branch() {
-        let mut loot = Lootr::new();
+        let mut loot = Lootr::default();
 
-        let weapons = Lootr::new();
+        let weapons = Lootr::default();
         loot.add_branch("weapons", weapons);
 
         loot.add_in(Item::an("Uzi"), "weapons");
@@ -252,7 +252,7 @@ mod tests {
 
     #[test]
     fn success_loot_simple_modifier() {
-        let mut loot = Lootr::new();
+        let mut loot = Lootr::default();
         loot.add_modifier(|item| item.extend(item.name, &HashMap::from([("strength", "+10")])))
             .add(Item::a("crown"));
 
@@ -284,7 +284,7 @@ mod tests {
 
     #[test]
     fn success_loot_extend_modifier() {
-        let mut loot = Lootr::new();
+        let mut loot = Lootr::default();
         loot.add_modifier(|item| item.extend(item.name, &HashMap::from([("strength", "+10")])))
             .add(Item::from(
                 "crown",

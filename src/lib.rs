@@ -8,7 +8,9 @@ use rand::{seq::SliceRandom, Rng};
 use std::{collections::HashMap, fmt, ops::RangeInclusive};
 
 const ROOT: Option<&str> = None;
+const SEPARATOR: char = '/';
 
+#[derive(Default)]
 pub struct Lootr {
     items: Vec<Item>,
     branchs: HashMap<&'static str, Lootr>,
@@ -19,11 +21,7 @@ impl Lootr {
     /// Create a new lootbag
     ///
     pub fn new() -> Self {
-        Self {
-            items: vec![],
-            branchs: HashMap::new(),
-            modifiers: vec![],
-        }
+        Self::default()
     }
 
     /// Create a new lootbag from given items
@@ -32,7 +30,7 @@ impl Lootr {
     ///
     pub fn from(items: Vec<Item>) -> Self {
         Self {
-            items: items,
+            items,
             branchs: HashMap::new(),
             modifiers: vec![],
         }
@@ -53,13 +51,13 @@ impl Lootr {
     /// Return this lootbag items count (at this level)
     ///
     pub fn self_count(&self) -> usize {
-        self.items.len().clone()
+        self.items.len()
     }
 
     /// Return this lootbag items count (including any sublevel)
     ///
     pub fn all_count(&self) -> usize {
-        self.all_items().len().clone()
+        self.all_items().len()
     }
 
     /// Add an item at this level
@@ -102,14 +100,14 @@ impl Lootr {
             return self.branchs.get_mut(&cname);
         }
 
-        if !cname.contains("/") {
+        if !cname.contains(SEPARATOR) {
             return None;
         }
 
         // segmented path
         let leaf = path
-            .trim_matches('/')
-            .split("/")
+            .trim_matches(SEPARATOR)
+            .split(SEPARATOR)
             .fold(self, |acc, s| acc.branch_mut(s).unwrap());
 
         Some(leaf)
@@ -128,17 +126,17 @@ impl Lootr {
             return self.branchs.get(&cname);
         }
 
-        if !cname.contains("/") {
+        if !cname.contains(SEPARATOR) {
             return None;
         }
 
         // segmented path
         let leaf = path
-            .trim_matches('/')
-            .split("/")
+            .trim_matches(SEPARATOR)
+            .split(SEPARATOR)
             .fold(self, |acc, s| match acc.branch(s) {
                 Some(branch) => branch,
-                _ => panic!("this branch does not exist: {}", s),
+                _ => panic!("this branch does not exist: {s}"),
             });
 
         Some(leaf)
@@ -233,7 +231,7 @@ impl Lootr {
         let mut bag = vec![];
         let rng = &mut rand::thread_rng();
 
-        if rng.gen::<f32>() < threshold && self.items.len() > 0 {
+        if rng.gen::<f32>() < threshold && !self.items.is_empty() {
             if let Some(item) = self.items.choose(&mut rand::thread_rng()) {
                 bag.push(item);
             }
@@ -286,7 +284,7 @@ impl Lootr {
     }
 
     fn clean(path: &'static str) -> &str {
-        path.trim_matches('/')
+        path.trim_matches(SEPARATOR)
     }
 }
 
@@ -307,10 +305,7 @@ pub struct Item {
 }
 impl Item {
     pub fn a(name: &'static str) -> Self {
-        Self {
-            name: name,
-            props: None,
-        }
+        Self { name, props: None }
     }
 
     pub fn an(name: &'static str) -> Self {
@@ -323,7 +318,7 @@ impl Item {
 
     pub fn from(name: &'static str, props: Props) -> Self {
         Item {
-            name: name,
+            name,
             props: Some(props),
         }
     }
@@ -357,7 +352,7 @@ impl Item {
         new_props.extend(props.iter());
         new_props.extend(ext_props.iter());
         Item {
-            name: name,
+            name,
             props: Some(new_props),
         }
     }
@@ -419,5 +414,11 @@ impl DropBuilder {
             depth: self.depth,
             stack: self.stack.clone(),
         }
+    }
+}
+
+impl Default for DropBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
