@@ -1,8 +1,11 @@
 mod tests;
 
-use std::{fmt, collections::HashMap, ops::RangeInclusive};
+use ascii_tree::{
+    write_tree,
+    Tree::{Leaf, Node},
+};
 use rand::{seq::SliceRandom, Rng};
-use ascii_tree::{Tree::{Leaf, Node}, write_tree};
+use std::{collections::HashMap, fmt, ops::RangeInclusive};
 
 const ROOT: Option<&str> = None;
 
@@ -13,7 +16,6 @@ pub struct Lootr {
 }
 
 impl Lootr {
-
     /// Create a new lootbag
     ///
     pub fn new() -> Self {
@@ -28,7 +30,7 @@ impl Lootr {
     ///
     /// * `items` A Vec of Items
     ///
-    pub fn from_items(items: Vec<Item>) -> Self {
+    pub fn from(items: Vec<Item>) -> Self {
         Self {
             items: items,
             branchs: HashMap::new(),
@@ -39,25 +41,25 @@ impl Lootr {
     /// Return this lootbag branchs
     ///
     pub fn branchs(&self) -> &HashMap<&str, Lootr> {
-       &self.branchs
+        &self.branchs
     }
 
     /// Return this lootbag items (at this level)
     ///
     pub fn items(&self) -> &Vec<Item> {
-       &self.items
+        &self.items
     }
 
     /// Return this lootbag items count (at this level)
     ///
     pub fn self_count(&self) -> usize {
-       self.items.len().clone()
+        self.items.len().clone()
     }
 
     /// Return this lootbag items count (including any sublevel)
     ///
     pub fn all_count(&self) -> usize {
-       self.all_items().len().clone()
+        self.all_items().len().clone()
     }
 
     /// Add an item at this level
@@ -101,7 +103,7 @@ impl Lootr {
         }
 
         if !cname.contains("/") {
-            return None
+            return None;
         }
 
         // segmented path
@@ -127,7 +129,7 @@ impl Lootr {
         }
 
         if !cname.contains("/") {
-            return None
+            return None;
         }
 
         // segmented path
@@ -136,7 +138,7 @@ impl Lootr {
             .split("/")
             .fold(self, |acc, s| match acc.branch(s) {
                 Some(branch) => branch,
-                _ => panic!("this branch does not exist: {}", s)
+                _ => panic!("this branch does not exist: {}", s),
             });
 
         Some(leaf)
@@ -173,15 +175,18 @@ impl Lootr {
     ///
     /// Returns `Some(Item)` or `None`
     ///
-    pub fn roll(&self, catalog_path: Option<&'static str>, nesting: i16, threshold: f32) -> Option<&Item> {
+    pub fn roll(
+        &self,
+        catalog_path: Option<&'static str>,
+        nesting: i16,
+        threshold: f32,
+    ) -> Option<&Item> {
         let branch = match catalog_path {
             None => self,
-            Some(path) => self.branch(path).unwrap()
+            Some(path) => self.branch(path).unwrap(),
         };
 
-        branch
-            .random_pick(nesting, threshold)
-            .to_owned()
+        branch.random_pick(nesting, threshold).to_owned()
     }
 
     /// Pick a random item anywhere in that branch
@@ -199,7 +204,6 @@ impl Lootr {
     /// Returns a vec of Item
     ///
     pub fn loot(&self, drops: &[Drop]) -> Vec<Item> {
-
         let mut rewards = vec![];
 
         for d in drops {
@@ -211,16 +215,15 @@ impl Lootr {
 
             let stack = rand::thread_rng().gen_range(d.stack.clone());
 
-            (0..stack)
-                .for_each(|_s| {
-                    let mut citem = item.unwrap().clone();
+            (0..stack).for_each(|_s| {
+                let mut citem = item.unwrap().clone();
 
-                    if !self.modifiers.is_empty() && d.modify {
-                        citem = self.random_modifier()(&mut citem);
-                    }
+                if !self.modifiers.is_empty() && d.modify {
+                    citem = self.random_modifier()(&mut citem);
+                }
 
-                    rewards.push(citem)
-                });
+                rewards.push(citem)
+            });
         }
 
         rewards
@@ -265,9 +268,11 @@ impl Lootr {
             self.items()
                 .iter()
                 .map(|item| String::from(item.name))
-                .collect()));
+                .collect(),
+        ));
 
-        let mut branchs: Vec<ascii_tree::Tree> = self.branchs()
+        let mut branchs: Vec<ascii_tree::Tree> = self
+            .branchs()
             .iter()
             .map(|(&name, branch)| branch.fmt_node(name))
             .collect();
@@ -319,21 +324,21 @@ impl Item {
     pub fn from(name: &'static str, props: Props) -> Self {
         Item {
             name: name,
-            props: Some(props)
+            props: Some(props),
         }
     }
 
     pub fn has_prop(&self, key: &'static str) -> bool {
         match &self.props {
             None => false,
-            Some(props) => props.contains_key(key)
+            Some(props) => props.contains_key(key),
         }
     }
 
     pub fn get_prop(&self, key: &'static str) -> Option<&str> {
         match &self.props {
             None => None,
-            Some(props) => props.get(key).copied()
+            Some(props) => props.get(key).copied(),
         }
     }
 
@@ -382,7 +387,7 @@ impl DropBuilder {
             luck: f32::MAX,
             modify: false,
             depth: 1,
-            stack: 1..=1
+            stack: 1..=1,
         }
     }
 
