@@ -1,7 +1,18 @@
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, fmt};
     use crate::{Lootr, Item, Drop, ROOT, DropBuilder};
+
+    #[test]
+    fn success_item() {
+        let item = Item::from("crown", HashMap::from([
+            ("strength", "10"),
+            ("charisma", "+100"),
+        ]));
+
+        assert_eq!(item.has_prop("strength"), true);
+        assert_eq!(item.get_prop("strength").unwrap(), "10");
+    }
 
     #[test]
     fn success_from() {
@@ -11,6 +22,12 @@ mod tests {
         ]);
         assert_eq!(loot.items().len(), 2);
         assert_eq!(loot.self_count(), 2);
+    }
+
+    #[test]
+    fn success_display() {
+        let output = fmt::format(format_args!("{}", stuffed()));
+        assert_eq!(output.split("─").count(), 10);
     }
 
     #[test]
@@ -30,6 +47,13 @@ mod tests {
             Item::a("Staff"),
             Item::an("Uzi")
         ]));
+
+        loot.branch_mut("weapons")
+            .unwrap()
+            .add_branch("leather", Lootr::from_items(vec![
+                Item::a("Boots"),
+                Item::a("Cap")
+            ]));
     }
 
     #[test]
@@ -45,7 +69,7 @@ mod tests {
         weapons.add_branch("deadly", deadly);
         loot.add_branch("weapons", weapons);
 
-        let fire_branch = loot.branch("weapons/deadly/fire");
+        let fire_branch = loot.branch_mut("weapons/deadly/fire");
         assert_eq!(fire_branch.unwrap().self_count(), 1);
     }
 
@@ -204,6 +228,55 @@ mod tests {
         assert_eq!(expected_weapons.contains(&weapons.into()), true, "There should be enough weapons");
     }
 
+    #[test]
+    fn success_loot_simple_modifier() {
+        let mut loot = Lootr::new();
+        loot
+            .add_modifier(|item| 
+                item.extend(item.name,  &HashMap::from([
+                    ("strength", "+10"),
+                ]))
+            )
+            .add(Item::a("crown"));
+
+        let picked = loot.loot(&[
+            Drop { from: ROOT, luck: 1.0, depth: 1, stack: 1..=1, modify: false },
+            Drop { from: ROOT, luck: 1.0, depth: 1, stack: 1..=1, modify: true },
+        ]);
+
+        let first = &picked.first().unwrap().clone();
+        let last = &picked.last().unwrap().clone();
+
+        assert_eq!(first.has_prop("strength"), false);
+
+        assert_eq!(last.has_prop("strength"), true);
+        assert_eq!(last.get_prop("strength").unwrap(), "+10");
+    }
+
+    #[test]
+    fn success_loot_extend_modifier() {
+        let mut loot = Lootr::new();
+        loot
+            .add_modifier(|item| 
+                item.extend(item.name,  &HashMap::from([
+                    ("strength", "+10"),
+                ]))
+            )
+            .add(Item::from("crown", HashMap::from([
+                ("strength", "0"),
+                ("charisma", "+100"),
+            ])));
+
+        let picked = loot.loot(&[
+            Drop { from: ROOT, luck: 1.0, depth: 1, stack: 1..=1, modify: true },
+        ]);
+
+        let first = &picked.first().unwrap().clone();
+
+        assert_eq!(first.get_prop("charisma").unwrap(), "+100");
+        assert_eq!(first.get_prop("strength").unwrap(), "+10");
+    }
+
     ////////////////////////////////////////////////////
 
     fn stuffed() -> Lootr {
@@ -221,13 +294,13 @@ mod tests {
             Item::a("Boots")
         ]));
     
-        loot.branch("equipment").unwrap()
+        loot.branch_mut("equipment").unwrap()
             .add_branch("leather", Lootr::from_items(vec![
                 Item::a("Jacket"),
                 Item::a("Pads")
             ]));
 
-        loot.branch("equipment/leather").unwrap()
+        loot.branch_mut("equipment/leather").unwrap()
             .add_branch("Scraps", Lootr::from_items(vec![
                 Item::a("ArmBand"),
                 Item::a("Patch")

@@ -1,14 +1,14 @@
 mod tests;
 
-use std::{collections::HashMap, ops::RangeInclusive};
+use std::{fmt, collections::HashMap, ops::RangeInclusive};
 use rand::{seq::SliceRandom, Rng};
+use ascii_tree::{Tree::{Leaf, Node}, write_tree};
 
-const ROOT: Option<&'static str> = None;
-const DEFAULT_MODIFIER: Modifier = |i| i;
+const ROOT: Option<&str> = None;
 
 pub struct Lootr {
     items: Vec<Item>,
-    branchs: HashMap<String, Lootr>,
+    branchs: HashMap<&'static str, Lootr>,
     modifiers: Vec<Modifier>,
 }
 
@@ -20,7 +20,7 @@ impl Lootr {
         Self {
             items: vec![],
             branchs: HashMap::new(),
-            modifiers: vec![DEFAULT_MODIFIER],
+            modifiers: vec![],
         }
     }
 
@@ -32,13 +32,13 @@ impl Lootr {
         Self {
             items: items,
             branchs: HashMap::new(),
-            modifiers: vec![DEFAULT_MODIFIER],
+            modifiers: vec![],
         }
     }
 
     /// Return this lootbag branchs
     ///
-    pub fn branchs(&self) -> &HashMap<String, Lootr> {
+    pub fn branchs(&self) -> &HashMap<&str, Lootr> {
        &self.branchs
     }
 
@@ -63,7 +63,7 @@ impl Lootr {
     /// Add an item at this level
     ///
     /// * `item` Item
-    /// 
+    ///
     /// Returns the current lootbag
     ///
     pub fn add(&mut self, item: Item) -> &mut Self {
@@ -76,11 +76,11 @@ impl Lootr {
     ///
     /// * `item` Item
     /// * `path` Path to the destination branch
-    /// 
+    ///
     /// Returns the current lootbag
     ///
     pub fn add_in(&mut self, item: Item, path: &'static str) -> &mut Self {
-        match self.branch(path) {
+        match self.branch_mut(path) {
             None => panic!("this path does not exist"),
             Some(branch) => branch.add(item),
         };
@@ -89,11 +89,10 @@ impl Lootr {
     }
 
     /// Returns the branch at the given path.
-    /// If the branch does not exit yet, it will be created.
     ///
     /// * `path` Branch path
-    /// 
-    pub fn branch(&mut self, path: &'static str) -> Option<&mut Lootr> {
+    ///
+    pub fn branch_mut(&mut self, path: &'static str) -> Option<&mut Lootr> {
         let cname = Self::clean(path);
 
         // simple case
@@ -109,7 +108,7 @@ impl Lootr {
         let leaf = path
             .trim_matches('/')
             .split("/")
-            .fold(self, |acc, s| acc.branch(s).unwrap());
+            .fold(self, |acc, s| acc.branch_mut(s).unwrap());
 
         Some(leaf)
     }
@@ -118,8 +117,8 @@ impl Lootr {
     /// If the branch does not exit yet, `None` is returned
     ///
     /// * `path` Branch path
-    /// 
-    pub fn branch_immutable(&self, path: &'static str) -> Option<&Lootr> {
+    ///
+    pub fn branch(&self, path: &'static str) -> Option<&Lootr> {
         let cname = Self::clean(path);
 
         // simple case
@@ -135,20 +134,25 @@ impl Lootr {
         let leaf = path
             .trim_matches('/')
             .split("/")
-            .fold(self, |acc, s| acc.branch_immutable(s).unwrap());
+            .fold(self, |acc, s| match acc.branch(s) {
+                Some(branch) => branch,
+                _ => panic!("this branch does not exist: {}", s)
+            });
 
         Some(leaf)
     }
 
+    /// Add a branch, return self (the owner)
+    ///
+    /// * `path` Branch path
+    ///
     pub fn add_branch(&mut self, path: &'static str, branch: Lootr) -> &mut Self {
-        self.branchs.insert(String::from(path), branch);
-        self.branchs.get_mut(path);
-
+        self.branchs.insert(path, branch);
         self
     }
 
     /// Return all items in the current and nested branchs
-    /// 
+    ///
     pub fn all_items(&self) -> Vec<Item> {
         let mut bag = vec![];
 
@@ -166,13 +170,13 @@ impl Lootr {
     /// * `catalog_path` Branch to get an item from, or ROOT
     /// * `nesting` Depth limit
     /// * `threshold` Chances (0-1) to go deeper
-    /// 
+    ///
     /// Returns `Some(Item)` or `None`
     ///
     pub fn roll(&self, catalog_path: Option<&'static str>, nesting: i16, threshold: f32) -> Option<&Item> {
         let branch = match catalog_path {
             None => self,
-            Some(path) => self.branch_immutable(path).unwrap()
+            Some(path) => self.branch(path).unwrap()
         };
 
         branch
@@ -189,7 +193,7 @@ impl Lootr {
     }
 
     /// Roll against a looting table
-    /// 
+    ///
     /// * `drops` A Drops table
     ///
     /// Returns a vec of Item
@@ -211,8 +215,8 @@ impl Lootr {
                 .for_each(|_s| {
                     let mut citem = item.unwrap().clone();
 
-                    if d.modify {
-                        self.random_modifier()(&mut citem);
+                    if !self.modifiers.is_empty() && d.modify {
+                        citem = self.random_modifier()(&mut citem);
                     }
 
                     rewards.push(citem)
@@ -228,7 +232,7 @@ impl Lootr {
 
         if rng.gen::<f32>() < threshold && self.items.len() > 0 {
             if let Some(item) = self.items.choose(&mut rand::thread_rng()) {
-                bag.push(item);                
+                bag.push(item);
             }
         }
 
@@ -247,18 +251,49 @@ impl Lootr {
         bag.choose(rng).copied()
     }
 
+    /// Add a modifier
+    ///
+    pub fn add_modifier(&mut self, modifier: Modifier) -> &mut Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
+    fn fmt_node(&self, name: &str) -> ascii_tree::Tree {
+        let mut children: Vec<ascii_tree::Tree> = vec![];
+
+        children.push(Leaf(
+            self.items()
+                .iter()
+                .map(|item| String::from(item.name))
+                .collect()));
+
+        let mut branchs: Vec<ascii_tree::Tree> = self.branchs()
+            .iter()
+            .map(|(&name, branch)| branch.fmt_node(name))
+            .collect();
+        children.append(&mut branchs);
+
+        Node(String::from(name), children)
+    }
+
     fn random_modifier(&self) -> &Modifier {
         self.modifiers.choose(&mut rand::thread_rng()).unwrap()
     }
 
-    fn clean(path: &'static str) -> String {
-        String::from(path.trim_matches('/'))
-    }    
+    fn clean(path: &'static str) -> &str {
+        path.trim_matches('/')
+    }
 }
 
+impl fmt::Display for Lootr {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write_tree(f, &self.fmt_node("ROOT"))
+    }
+}
 
-pub type Props = Option<HashMap<&'static str, &'static str>>;
-pub type Modifier = fn(item: &mut Item) -> &Item;
+pub type Props = HashMap<&'static str, &'static str>;
+pub type Modifier = fn(item: &mut Item) -> Item;
 
 #[derive(Clone)]
 pub struct Item {
@@ -276,9 +311,50 @@ impl Item {
     pub fn an(name: &'static str) -> Self {
         Item::a(name)
     }
-    
+
     pub fn named(name: &'static str) -> Self {
         Item::a(name)
+    }
+
+    pub fn from(name: &'static str, props: Props) -> Self {
+        Item {
+            name: name,
+            props: Some(props)
+        }
+    }
+
+    pub fn has_prop(&self, key: &'static str) -> bool {
+        match &self.props {
+            None => false,
+            Some(props) => props.contains_key(key)
+        }
+    }
+
+    pub fn get_prop(&self, key: &'static str) -> Option<&str> {
+        match &self.props {
+            None => None,
+            Some(props) => props.get(key).copied()
+        }
+    }
+
+    pub fn add_prop(&mut self, name: &'static str, value: &'static str) -> &mut Self {
+        let props = self.props.clone().unwrap_or_default();
+        let mut new_props: HashMap<&str, &str> = HashMap::new();
+        new_props.extend(props.iter());
+        new_props.insert(name, value);
+        self.props = Some(new_props);
+        self
+    }
+
+    pub fn extend(&self, name: &'static str, ext_props: &Props) -> Self {
+        let props = self.props.clone().unwrap_or_default();
+        let mut new_props: HashMap<&str, &str> = HashMap::new();
+        new_props.extend(props.iter());
+        new_props.extend(ext_props.iter());
+        Item {
+            name: name,
+            props: Some(new_props),
+        }
     }
 }
 
@@ -290,49 +366,8 @@ pub struct Drop {
     pub depth: i16,
     pub stack: RangeInclusive<u32>,
 }
-impl Drop {
-    pub fn from(path: &'static str) -> Self {
-        Self {
-            from: Some(path),
-            luck: 1.0,
-            modify: false,
-            depth: 1,
-            stack: 1..=1
-        }
-    }
 
-    pub fn any() -> Self {
-        Self {
-            from: ROOT,
-            luck: f32::MAX,
-            modify: false,
-            depth: i16::MAX,
-            stack: 1..=1
-        }
-    }
-
-    pub fn modify(mut self) -> Self {
-        self.modify = true;
-        self
-    }
-
-    pub fn stack_of(mut self, stack: RangeInclusive<u32>) -> Self {
-        self.stack = stack;
-        self
-    }
-
-    pub fn luck_of(mut self, luck: f32) -> Self {
-        self.luck = luck;
-        self
-    }
-
-    pub fn depth(mut self, depth: i16) -> Self {
-        self.depth = depth;
-        self
-    }
-}
-
-struct DropBuilder {
+pub struct DropBuilder {
     pub from: Option<&'static str>,
     pub luck: f32,
     pub modify: bool,
@@ -341,7 +376,7 @@ struct DropBuilder {
 }
 
 impl DropBuilder {
-    fn new() -> DropBuilder {
+    pub fn new() -> DropBuilder {
         DropBuilder {
             from: ROOT,
             luck: f32::MAX,
@@ -350,23 +385,28 @@ impl DropBuilder {
             stack: 1..=1
         }
     }
-    fn from(mut self, path: &'static str) -> DropBuilder {
+
+    pub fn from(mut self, path: &'static str) -> DropBuilder {
         self.from = Some(path);
         self
     }
-    fn luck(mut self, luck: f32) -> DropBuilder {
+
+    pub fn luck(mut self, luck: f32) -> DropBuilder {
         self.luck = luck;
         self
     }
-    fn anydepth(mut self) -> DropBuilder {
+
+    pub fn anydepth(mut self) -> DropBuilder {
         self.depth = i16::MAX;
         self
     }
-    fn depth(mut self, depth: i16) -> DropBuilder {
+
+    pub fn depth(mut self, depth: i16) -> DropBuilder {
         self.depth = depth;
         self
     }
-    fn build(&self) -> Drop {
+
+    pub fn build(&self) -> Drop {
         Drop {
             from: self.from,
             luck: self.luck,
