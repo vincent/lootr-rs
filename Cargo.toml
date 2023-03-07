@@ -1,7 +1,7 @@
 [package]
 name = "lootr"
 description = "A simple RPG-like looting system"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Vincent Lark <vincent.lark@gmail.com>"]
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/vincent/lootr-rs/"
