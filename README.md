@@ -37,7 +37,7 @@ Then, a collection of Drops describe how items are yield from a loot action.
 Create a loot bag
 =====
 
-Lootr is organized as a tree. Get a new instance, and add items.
+Create items.
 
 ```rust
 use lootr::{Lootr, item::Item};
