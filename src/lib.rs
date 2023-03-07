@@ -1,6 +1,6 @@
-mod tests;
-pub mod item;
 pub mod drops;
+pub mod item;
+mod tests;
 
 use ascii_tree::{
     write_tree,
@@ -9,7 +9,7 @@ use ascii_tree::{
 use rand::{seq::SliceRandom, Rng};
 use std::{collections::HashMap, fmt};
 
-use crate::{item::Item, drops::Drop};
+use crate::{drops::Drop, item::Item};
 
 const ROOT: Option<&str> = None;
 const SEPARATOR: char = '/';
