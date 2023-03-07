@@ -3,7 +3,7 @@
 //! Drops describe what _should_ be looted from a bag in Lootr.
 //! It mainly holds a `path`, `depth` and a `stack`.
 //!
-//! When used in `Lootr::loot()`, it should yield items as decribed by the Drop object.
+//! When used in [`Lootr::loot()`](crate::Lootr::loot), it should yield items as decribed by the Drop object.
 //!
 //! The easiest way to create a Drop is to use [`DropBuilder`](crate::drops::DropBuilder), the Lootr builder pattern for Drop.
 //!
@@ -16,7 +16,7 @@ use std::ops::RangeInclusive;
 /// Drops describe what _should_ be looted from a Lootr bag.
 /// It mainly holds a `path`, `depth` and a `stack`.
 ///
-/// When used in [`Lootr::loot()`](crate::Lootr), loot() should yield items as decribed by each Drop object.
+/// When used in [`Lootr::loot()`](crate::Lootr::loot), loot() should yield items as decribed by each Drop object.
 ///
 /// The easiest way to create a Drop is to use [`DropBuilder`](crate::drops::DropBuilder), the Lootr builder pattern for Drop.
 ///
@@ -95,12 +95,12 @@ impl DropBuilder {
     /// use lootr::drops::DropBuilder;
     ///
     /// let drop = DropBuilder::new()
-    ///     .from("fruits")
+    ///     .path("fruits")
     ///     .build();
     ///
     /// assert_eq!(drop.path, Some("fruits"));
     /// ```
-    pub fn from(mut self, path: &'static str) -> DropBuilder {
+    pub fn path(mut self, path: &'static str) -> DropBuilder {
         self.path = Some(path);
         self
     }
@@ -167,7 +167,7 @@ impl DropBuilder {
     /// use lootr::{item::{Item, Props}, drops::DropBuilder};
     ///
     /// let drop = DropBuilder::new()
-    ///     .from("fruits")
+    ///     .path("fruits")
     ///     .depth(3)
     ///     .luck(0.9)
     ///     .build();

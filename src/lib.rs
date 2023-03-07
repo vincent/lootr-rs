@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 pub mod drops;
 pub mod item;
 mod tests;
@@ -9,12 +11,13 @@ use ascii_tree::{
 use rand::{seq::SliceRandom, Rng};
 use std::{collections::HashMap, fmt};
 
-use crate::{drops::Drop, item::Item};
+use crate::{
+    drops::Drop,
+    item::{Item, Modifier},
+};
 
 const ROOT: Option<&str> = None;
 const SEPARATOR: char = '/';
-
-pub type Modifier = fn(item: &mut Item) -> Item;
 
 #[derive(Default)]
 pub struct Lootr {

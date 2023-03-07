@@ -27,6 +27,7 @@ mod tests {
 
     #[test]
     fn success_display() {
+        // println!("{}", stuffed());
         let output = fmt::format(format_args!("{}", stuffed()));
         assert_eq!(output.split("─").count(), 10);
     }
@@ -159,8 +160,8 @@ mod tests {
                 stack: 1..=1,
                 modify: false,
             },
-            DropBuilder::new().from("equipment").luck(1.0).build(),
-            DropBuilder::new().from("weapons").luck(1.0).build(),
+            DropBuilder::new().path("equipment").luck(1.0).build(),
+            DropBuilder::new().path("weapons").luck(1.0).build(),
         ];
 
         let rewards = loot.loot(&drops);
@@ -176,12 +177,12 @@ mod tests {
         let luck_for_weapons = 0.8;
         let drops = [
             DropBuilder::new()
-                .from("equipment")
+                .path("equipment")
                 .luck(luck_for_equipment)
                 .depth(i16::MAX)
                 .build(),
             DropBuilder::new()
-                .from("weapons")
+                .path("weapons")
                 .luck(luck_for_weapons)
                 .anydepth()
                 .build(),

@@ -1,15 +1,40 @@
 Lootr
 =====
 
-A simple RPG-like looting system.
+**Lootr** \lutʁ\ is a simple RPG-like looting system.
 
-Heavily inspired from http://journal.stuffwithstuff.com/2014/07/05/dropping-loot
+Lootr provides a way to organize data commonly named loot in a gameplay context.
+It helps you to manage which items can be found, in a generic and statisticaly controlled system.
 
-A JS version is available here https://github.com/vincent/lootr
+It is heavily inspired from the work of Bob Nystrom <http://journal.stuffwithstuff.com/2014/07/05/dropping-loot>
 
-A C# version is available here https://github.com/Sparox/LootrCsharp
+A JS version is available here <https://github.com/vincent/lootr>
+<br>
+A C# version is available here <https://github.com/Sparox/LootrCsharp>
 
-Adding items
+In Lootr, lootables are organized in a tree of categories and items.
+<pre>
+ROOT
+├─ Staff
+├─ equipment
+│  ├─ Gloves
+│  │  Boots
+│  └─ leather
+│     │  Jacket
+│     └─ Pads
+└─ weapons
+   ├─ Bat
+   └─ Uzi
+</pre>
+
+Then, a collection of Drops describe how items are yield from a loot action.
+
+> _equipment: 50% chances, stack of 2_
+>
+>    This might yield 2 items in the equipment tree, for example 1 Gloves + 1 Boots
+
+
+Create a loot bag
 =====
 
 Lootr is organized as a tree. Get a new instance, and add items.
@@ -17,10 +42,23 @@ Lootr is organized as a tree. Get a new instance, and add items.
 ```rust
 let mut loot = Lootr::default();
 
-loot.add(Item::a("Berries"));
+loot.add(
+    Item::a("Berries")
+);
 ```
 
-Each level is composed by a list of items in `loot.items` and nested branchs in `loot.branchs`.
+Items can have properties.
+
+```rust
+loot.add(
+    Item::from("crown", Props::from([
+        ("strength", "10"),
+        ("charisma", "+100")
+    ]))
+);
+```
+
+Each level is composed by a list of `.items` and nested `.branchs`.
 
 Organize the loot repository by adding branchs
 
@@ -32,55 +70,54 @@ let armor = loot.add_branch("armor")
 Optionnaly with items
 
 ```rust
-loot.add_branch("weapons", Lootr::from_items(vec![
+loot.add_branch("weapons", Lootr::from(vec![
     Item::a("Staff"),
     Item::an("Uzi")
 ]));
 
-loot.add_branch("armor", Lootr::from_items(vec![
+loot.add_branch("armor", Lootr::from(vec![
     Item::a("Boots"),
     Item::a("Socks")
 ]));
+
 loot.branch("armor")
-    .unwrap().add_branch("leather", Lootr::from_items(vec![
+    .unwrap()
+    .add_branch("leather", Lootr::from(vec![
         Item::a("Belt"),
         Item::a("Hat")
     ]));
 ```
 
-Rollin'
+Looting
 =====
 
-Random-pick some items.
-
-It will yield an item in the `path` branch or, if `depth` is given, in an up to `depth` deep branchs, if the depth-decreasing `chance` is greater than a random 0..1
-
-```rust
-// Loot something from top level
-loot.roll(ROOT, 0, 1.0)               // only Berries
-
-// Loot something from top level or from any subtree
-loot.roll_any(ROOT)
-
-// Loot a weapon
-loot.roll(Some("/weapons"), 1, 1.0)   // one of [ Pistol, Uzi ]
-
-// Loot an armor
-loot.roll(Some("/armor"), 1, 1.0)     // one of [ Boots, Socks ]
-loot.roll(Some("/armor"), 2, 1.0)     // one of [ Boots, Socks, Belt, Hat ]
-
-```
-
-Lootin'
-=====
-
-Loot against a loot table, described by a definition array like the following. The string stack value allow random stacks in the specified range.
+Loot against a loot table, described by a like the following.
 
 ```rust
 let drops = [
-    Drop { from: ROOT, luck: 1.0, depth: 1, stack: 1..=1, modify: false },
-    DropBuilder::new().from("armor").luck(1.0).build(),
-    DropBuilder::new().from("weapons").luck(1.0).stack(1..=3).build(),
+    Drop { path: ROOT, depth: 1, luck: 1.0, stack: 1..=1, modify: false },
+];
+```
+
+A builder pattern is also available to ease drops creation.
+
+ * [`path()`](crate::drops::DropBuilder::path) selects the root of this drop
+ * [`depth()`](crate::drops::DropBuilder::depth) max depth to consider
+ * [`luck()`](crate::drops::DropBuilder::luck) the luck we start with, will decrease at each sub tree
+ * [`stack()`](crate::drops::DropBuilder::stack) the range of copies to yield
+
+```rust
+let drops = [
+    DropBuilder::new()
+        .from("armor")
+        .luck(1.0)
+        .build(),
+
+    DropBuilder::new()
+        .from("weapons")
+        .luck(1.0)
+        .stack(1..=3)
+        .build(),
 ];
 
 // Loot your reward from a dead monster

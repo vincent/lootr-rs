@@ -3,23 +3,27 @@
 //! Items are the core data type used to hold your items data in Lootr.
 //! It holds a `name` and some `props`.
 //!
-//! The easiest way to create an Item is to use [`Item::from`](crate::item::Item).
+//! The easiest way to create an Item is to use [`Item::from`](crate::item::Item::from).
 //!
-//! Item [`Props`](crate::props) can be queried directly with `has_prop()`, `get_prop()` and `set_prop()`
+//! Item [`Props`](crate::item::Props) can be queried directly with `has_prop()`, `get_prop()` and `set_prop()`
 //!
 
 use std::collections::HashMap;
 
-/// Holds the item properties in an `HashMap<&str, &str>`
+/// Holds the item properties in an `HashMap<&str, &str>`.
 ///
 pub type Props = HashMap<&'static str, &'static str>;
+
+/// Describe a modifier helper function.
+///
+pub type Modifier = fn(item: &mut Item) -> Item;
 
 /// Holds a Lootr Item.
 ///
 /// Items are the core data type used to hold your items data in Lootr.
 /// It holds a `name` and some `props`.
 ///
-/// The easiest way to create an Item is to use [`Item::from`](crate::item::Item).
+/// The easiest way to create an Item is to use [`Item::from`](crate::item::Item::from).
 ///
 #[derive(Clone)]
 pub struct Item {
@@ -77,9 +81,6 @@ impl Item {
 
     /// Create an Item with a name and some properties.
     ///
-    /// * `name: &str` Item name
-    /// * `props: Props` Properties
-    ///
     /// # Examples
     ///
     /// ```
@@ -100,9 +101,6 @@ impl Item {
     /// Create an Item by extending a previous one, with new name and properties.
     /// The given properties will overload the given item ones.
     ///
-    /// * `name: &str` Item name
-    /// * `props: Props` Properties
-    ///  
     /// # Examples
     ///
     /// ```
@@ -133,8 +131,6 @@ impl Item {
 
     /// Check the existence of an item property.
     ///
-    /// * `key: &str` Prop name
-    ///
     /// # Examples
     ///
     /// ```
@@ -157,8 +153,6 @@ impl Item {
     /// Return an item property.
     /// If this prop does not exist, `None` is returned.
     ///
-    /// * `key: &str` Prop name
-    ///
     /// # Examples
     ///
     /// ```
@@ -180,9 +174,6 @@ impl Item {
 
     /// Set an item property.
     /// If this prop already exist, the value is replaced.
-    ///
-    /// * `key: &str` Prop name
-    /// * `value: &str` Prop value
     ///
     /// # Examples
     ///
