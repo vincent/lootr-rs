@@ -52,6 +52,8 @@ Items can have properties.
 
 ```rust
 use lootr::{Lootr, item::{Item, Props}};
+let mut loot = Lootr::default();
+
 loot.add(
     Item::from("crown", Props::from([
         ("strength", "10"),
@@ -68,8 +70,8 @@ Organize the loot repository by adding branchs
 use lootr::Lootr;
 let mut loot = Lootr::default();
 
-let weapons = loot.add_branch("weapons")
-let armor = loot.add_branch("armor")
+let weapons = loot.add_branch("weapons", Lootr::default());
+let armor = loot.add_branch("armor", Lootr::default());
 ```
 
 Optionnaly with items
@@ -88,7 +90,7 @@ loot.add_branch("armor", Lootr::from(vec![
     Item::a("Socks")
 ]));
 
-loot.branch("armor")
+loot.branch_mut("armor")
     .unwrap()
     .add_branch("leather", Lootr::from(vec![
         Item::a("Belt"),
@@ -102,7 +104,7 @@ Looting
 Loot against a loot table, described by a like the following.
 
 ```rust
-use lootr::drops::Drop;
+use lootr::{ROOT, drops::Drop};
 
 let drops = [
     Drop { path: ROOT, depth: 1, luck: 1.0, stack: 1..=1, modify: false },
@@ -117,25 +119,34 @@ A builder pattern is also available to ease drops creation.
  * [`stack()`](crate::drops::DropBuilder::stack) the range of copies to yield
 
 ```rust
-use lootr::{Lootr, drops::DropBuilder};
+use lootr::{Lootr, item::Item, drops::DropBuilder};
 let mut loot = Lootr::default();
-// add items..
+
+loot.add_branch("weapons", Lootr::from(vec![
+    Item::a("Staff"),
+    Item::an("Uzi")
+]));
+
+loot.add_branch("armor", Lootr::from(vec![
+    Item::a("Boots"),
+    Item::a("Socks")
+]));
 
 let drops = [
     DropBuilder::new()
-        .from("armor")
+        .path("armor")
         .luck(1.0)
         .build(),
 
     DropBuilder::new()
-        .from("weapons")
+        .path("weapons")
         .luck(1.0)
         .stack(1..=3)
         .build(),
 ];
 
 // Loot your reward from a dead monster
-let rewards = loot.loot(&drops)
+let rewards = loot.loot(&drops);
 
 // rewards = [ "Berries", "Plates", "Uzi", "Uzi", "Staff" ]
 ```

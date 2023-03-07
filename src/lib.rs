@@ -16,7 +16,7 @@ use crate::{
     item::{Item, Modifier},
 };
 
-const ROOT: Option<&str> = None;
+pub const ROOT: Option<&str> = None;
 const SEPARATOR: char = '/';
 
 #[derive(Default)]

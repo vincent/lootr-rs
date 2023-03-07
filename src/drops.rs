@@ -159,6 +159,22 @@ impl DropBuilder {
         self
     }
 
+    /// Set the `stack` for the future [`Drop`](crate::drops::Drop) object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use lootr::drops::DropBuilder;
+    ///
+    /// let drop = DropBuilder::new()
+    ///     .stack(1..=3)
+    ///     .build();
+    /// ```
+    pub fn stack(mut self, stack: RangeInclusive<u32>) -> DropBuilder {
+        self.stack = stack;
+        self
+    }
+
     /// Finish a build sequence, and create a [`Drop`](crate::drops::Drop) object.
     ///
     /// # Examples
