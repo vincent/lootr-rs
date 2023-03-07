@@ -1,20 +1,34 @@
 mod tests;
+pub mod item;
+pub mod drops;
 
 use ascii_tree::{
     write_tree,
     Tree::{Leaf, Node},
 };
 use rand::{seq::SliceRandom, Rng};
-use std::{collections::HashMap, fmt, ops::RangeInclusive};
+use std::{collections::HashMap, fmt};
+
+use crate::{item::Item, drops::Drop};
 
 const ROOT: Option<&str> = None;
 const SEPARATOR: char = '/';
+
+pub type Props = HashMap<&'static str, &'static str>;
+pub type Modifier = fn(item: &mut Item) -> Item;
 
 #[derive(Default)]
 pub struct Lootr {
     items: Vec<Item>,
     branchs: HashMap<&'static str, Lootr>,
     modifiers: Vec<Modifier>,
+}
+
+impl fmt::Display for Lootr {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write_tree(f, &self.fmt_node("ROOT"))
+    }
 }
 
 impl Lootr {
@@ -285,140 +299,5 @@ impl Lootr {
 
     fn clean(path: &'static str) -> &str {
         path.trim_matches(SEPARATOR)
-    }
-}
-
-impl fmt::Display for Lootr {
-    // This trait requires `fmt` with this exact signature.
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write_tree(f, &self.fmt_node("ROOT"))
-    }
-}
-
-pub type Props = HashMap<&'static str, &'static str>;
-pub type Modifier = fn(item: &mut Item) -> Item;
-
-#[derive(Clone)]
-pub struct Item {
-    pub name: &'static str,
-    pub props: Option<Props>,
-}
-impl Item {
-    pub fn a(name: &'static str) -> Self {
-        Self { name, props: None }
-    }
-
-    pub fn an(name: &'static str) -> Self {
-        Item::a(name)
-    }
-
-    pub fn named(name: &'static str) -> Self {
-        Item::a(name)
-    }
-
-    pub fn from(name: &'static str, props: Props) -> Self {
-        Item {
-            name,
-            props: Some(props),
-        }
-    }
-
-    pub fn has_prop(&self, key: &'static str) -> bool {
-        match &self.props {
-            None => false,
-            Some(props) => props.contains_key(key),
-        }
-    }
-
-    pub fn get_prop(&self, key: &'static str) -> Option<&str> {
-        match &self.props {
-            None => None,
-            Some(props) => props.get(key).copied(),
-        }
-    }
-
-    pub fn add_prop(&mut self, name: &'static str, value: &'static str) -> &mut Self {
-        let props = self.props.clone().unwrap_or_default();
-        let mut new_props: HashMap<&str, &str> = HashMap::new();
-        new_props.extend(props.iter());
-        new_props.insert(name, value);
-        self.props = Some(new_props);
-        self
-    }
-
-    pub fn extend(&self, name: &'static str, ext_props: &Props) -> Self {
-        let props = self.props.clone().unwrap_or_default();
-        let mut new_props: HashMap<&str, &str> = HashMap::new();
-        new_props.extend(props.iter());
-        new_props.extend(ext_props.iter());
-        Item {
-            name,
-            props: Some(new_props),
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct Drop {
-    pub from: Option<&'static str>,
-    pub luck: f32,
-    pub modify: bool,
-    pub depth: i16,
-    pub stack: RangeInclusive<u32>,
-}
-
-pub struct DropBuilder {
-    pub from: Option<&'static str>,
-    pub luck: f32,
-    pub modify: bool,
-    pub depth: i16,
-    pub stack: RangeInclusive<u32>,
-}
-
-impl DropBuilder {
-    pub fn new() -> DropBuilder {
-        DropBuilder {
-            from: ROOT,
-            luck: f32::MAX,
-            modify: false,
-            depth: 1,
-            stack: 1..=1,
-        }
-    }
-
-    pub fn from(mut self, path: &'static str) -> DropBuilder {
-        self.from = Some(path);
-        self
-    }
-
-    pub fn luck(mut self, luck: f32) -> DropBuilder {
-        self.luck = luck;
-        self
-    }
-
-    pub fn anydepth(mut self) -> DropBuilder {
-        self.depth = i16::MAX;
-        self
-    }
-
-    pub fn depth(mut self, depth: i16) -> DropBuilder {
-        self.depth = depth;
-        self
-    }
-
-    pub fn build(&self) -> Drop {
-        Drop {
-            from: self.from,
-            luck: self.luck,
-            modify: self.modify,
-            depth: self.depth,
-            stack: self.stack.clone(),
-        }
-    }
-}
-
-impl Default for DropBuilder {
-    fn default() -> Self {
-        Self::new()
     }
 }

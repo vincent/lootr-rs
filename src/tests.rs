@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::{Drop, DropBuilder, Item, Lootr, ROOT};
     use std::{collections::HashMap, fmt};
+    use crate::{Item, Lootr, ROOT, drops::{DropBuilder, Drop}};
 
     #[test]
     fn success_item() {
