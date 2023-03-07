@@ -42,8 +42,6 @@ impl Lootr {
 
     /// Create a new lootbag from given items
     ///
-    /// * `items` A Vec of Items
-    ///
     pub fn from(items: Vec<Item>) -> Self {
         Self {
             items,
@@ -78,8 +76,6 @@ impl Lootr {
 
     /// Add an item at this level
     ///
-    /// * `item` Item
-    ///
     /// Returns the current lootbag
     ///
     pub fn add(&mut self, item: Item) -> &mut Self {
@@ -89,9 +85,6 @@ impl Lootr {
     }
 
     /// Add an item in the given branch
-    ///
-    /// * `item` Item
-    /// * `path` Path to the destination branch
     ///
     /// Returns the current lootbag
     ///
@@ -105,8 +98,6 @@ impl Lootr {
     }
 
     /// Returns the branch at the given path.
-    ///
-    /// * `path` Branch path
     ///
     pub fn branch_mut(&mut self, path: &'static str) -> Option<&mut Lootr> {
         let cname = Self::clean(path);
@@ -131,8 +122,6 @@ impl Lootr {
 
     /// Returns the branch at the given path.
     /// If the branch does not exit yet, `None` is returned
-    ///
-    /// * `path` Branch path
     ///
     pub fn branch(&self, path: &'static str) -> Option<&Lootr> {
         let cname = Self::clean(path);
@@ -160,8 +149,6 @@ impl Lootr {
 
     /// Add a branch, return self (the owner)
     ///
-    /// * `path` Branch path
-    ///
     pub fn add_branch(&mut self, path: &'static str, branch: Lootr) -> &mut Self {
         self.branchs.insert(path, branch);
         self
@@ -182,10 +169,6 @@ impl Lootr {
     }
 
     /// Pick a random item from the specified branch
-    ///
-    /// * `catalog_path` Branch to get an item from, or ROOT
-    /// * `nesting` Depth limit
-    /// * `threshold` Chances (0-1) to go deeper
     ///
     /// Returns `Some(Item)` or `None`
     ///
@@ -212,8 +195,6 @@ impl Lootr {
     }
 
     /// Roll against a looting table
-    ///
-    /// * `drops` A Drops table
     ///
     /// Returns a vec of Item
     ///

@@ -40,6 +40,7 @@ Create a loot bag
 Lootr is organized as a tree. Get a new instance, and add items.
 
 ```rust
+use lootr::{Lootr, item::Item};
 let mut loot = Lootr::default();
 
 loot.add(
@@ -50,6 +51,7 @@ loot.add(
 Items can have properties.
 
 ```rust
+use lootr::{Lootr, item::{Item, Props}};
 loot.add(
     Item::from("crown", Props::from([
         ("strength", "10"),
@@ -63,6 +65,9 @@ Each level is composed by a list of `.items` and nested `.branchs`.
 Organize the loot repository by adding branchs
 
 ```rust
+use lootr::Lootr;
+let mut loot = Lootr::default();
+
 let weapons = loot.add_branch("weapons")
 let armor = loot.add_branch("armor")
 ```
@@ -70,6 +75,9 @@ let armor = loot.add_branch("armor")
 Optionnaly with items
 
 ```rust
+use lootr::{Lootr, item::Item};
+let mut loot = Lootr::default();
+
 loot.add_branch("weapons", Lootr::from(vec![
     Item::a("Staff"),
     Item::an("Uzi")
@@ -94,6 +102,8 @@ Looting
 Loot against a loot table, described by a like the following.
 
 ```rust
+use lootr::drops::Drop;
+
 let drops = [
     Drop { path: ROOT, depth: 1, luck: 1.0, stack: 1..=1, modify: false },
 ];
@@ -107,6 +117,10 @@ A builder pattern is also available to ease drops creation.
  * [`stack()`](crate::drops::DropBuilder::stack) the range of copies to yield
 
 ```rust
+use lootr::{Lootr, drops::DropBuilder};
+let mut loot = Lootr::default();
+// add items..
+
 let drops = [
     DropBuilder::new()
         .from("armor")
@@ -123,7 +137,7 @@ let drops = [
 // Loot your reward from a dead monster
 let rewards = loot.loot(&drops)
 
-rewards = [ "Berries", "Plates", "Uzi", "Uzi", "Staff" ]
+// rewards = [ "Berries", "Plates", "Uzi", "Uzi", "Staff" ]
 ```
 
 Modifiers
@@ -133,7 +147,7 @@ The library includes a basic modifiers system.
 Add some modifiers to affect the properties of each looted item with `addModifiers`.
 * `name` modifier will be used as simple suffixes. Or, if it contains one or more `$property`, each property name will be replaced.
 * other properties will be handled as the following
-```rust
+```ignore
 loot.add({ name: "Staff", color: "golden" })
 loot.addModifiers([
     { name:    "from the shadows" },
@@ -146,7 +160,7 @@ loot.addModifiers([
 ```
 
 Then, at loot time:
-```rust
+```ignore
 deadMonster.drops = [
     {from: "/equipment", stack:2, modify:true }
 ]
