@@ -2,6 +2,7 @@
 mod tests {
     use crate::{
         drops::{Drop, DropBuilder},
+        item::Props,
         Item, Lootr, ROOT,
     };
     use std::{collections::HashMap, fmt};
@@ -10,7 +11,7 @@ mod tests {
     fn success_item() {
         let item = Item::from(
             "crown",
-            HashMap::from([("strength", "10"), ("charisma", "+100")]),
+            Props::from([("strength", "10"), ("charisma", "+100")]),
         );
 
         assert_eq!(item.has_prop("strength"), true);
@@ -152,7 +153,7 @@ mod tests {
 
         let drops = [
             Drop {
-                from: ROOT,
+                path: ROOT,
                 luck: 1.0,
                 depth: 1,
                 stack: 1..=1,
@@ -261,14 +262,14 @@ mod tests {
 
         let picked = loot.loot(&[
             Drop {
-                from: ROOT,
+                path: ROOT,
                 luck: 1.0,
                 depth: 1,
                 stack: 1..=1,
                 modify: false,
             },
             Drop {
-                from: ROOT,
+                path: ROOT,
                 luck: 1.0,
                 depth: 1,
                 stack: 1..=1,
@@ -295,7 +296,7 @@ mod tests {
             ));
 
         let picked = loot.loot(&[Drop {
-            from: ROOT,
+            path: ROOT,
             luck: 1.0,
             depth: 1,
             stack: 1..=1,

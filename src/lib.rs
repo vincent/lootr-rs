@@ -14,7 +14,6 @@ use crate::{drops::Drop, item::Item};
 const ROOT: Option<&str> = None;
 const SEPARATOR: char = '/';
 
-pub type Props = HashMap<&'static str, &'static str>;
 pub type Modifier = fn(item: &mut Item) -> Item;
 
 #[derive(Default)]
@@ -219,7 +218,7 @@ impl Lootr {
         let mut rewards = vec![];
 
         for d in drops {
-            let item = self.roll(d.from, d.depth, d.luck);
+            let item = self.roll(d.path, d.depth, d.luck);
 
             if item.is_none() {
                 continue;
