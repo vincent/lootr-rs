@@ -1,7 +1,13 @@
 [package]
 name = "lootr"
+description = "A simple RPG-like looting system"
 version = "0.2.0"
-edition = "2021"
+authors = ["Vincent Lark <vincent.lark@gmail.com>"]
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/vincent/lootr-rs/"
+repository = "https://github.com/vincent/lootr-rs/"
+documentation = "https://docs.rs/lootr"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
