@@ -8,8 +8,9 @@ use ascii_tree::{
     write_tree,
     Tree::{Leaf, Node},
 };
-use rand::{seq::SliceRandom, Rng};
+use rand::{seq::SliceRandom, Rng, RngCore, SeedableRng};
 use std::{collections::HashMap, fmt};
+use rand_chacha::ChaCha20Rng;
 
 use crate::{
     drops::Drop,
@@ -19,11 +20,11 @@ use crate::{
 pub const ROOT: Option<&str> = None;
 const SEPARATOR: char = '/';
 
-#[derive(Default)]
 pub struct Lootr {
     items: Vec<Item>,
     branchs: HashMap<&'static str, Lootr>,
     modifiers: Vec<Modifier>,
+    rng: Box<ChaCha20Rng>,
 }
 
 impl fmt::Display for Lootr {
@@ -37,7 +38,7 @@ impl Lootr {
     /// Create a new lootbag
     ///
     pub fn new() -> Self {
-        Self::default()
+        Self::from(vec![])
     }
 
     /// Create a new lootbag from given items
@@ -47,6 +48,7 @@ impl Lootr {
             items,
             branchs: HashMap::new(),
             modifiers: vec![],
+            rng: Box::new(ChaCha20Rng::from_entropy()),
         }
     }
 
@@ -173,14 +175,14 @@ impl Lootr {
     /// Returns `Some(Item)` or `None`
     ///
     pub fn roll(
-        &self,
+        &mut self,
         catalog_path: Option<&'static str>,
         nesting: i16,
         threshold: f32,
     ) -> Option<&Item> {
         let branch = match catalog_path {
             None => self,
-            Some(path) => self.branch(path).unwrap(),
+            Some(path) => self.branch_mut(path).unwrap(),
         };
 
         branch.random_pick(nesting, threshold).to_owned()
@@ -198,8 +200,10 @@ impl Lootr {
     ///
     /// Returns a vec of Item
     ///
-    pub fn loot(&self, drops: &[Drop]) -> Vec<Item> {
+    pub fn loot(&mut self, drops: &[Drop]) -> Vec<Item> {
         let mut rewards = vec![];
+        let mut rng = self.rng.to_owned();
+        let modifiers = self.modifiers.clone();
 
         for d in drops {
             let item = self.roll(d.path, d.depth, d.luck);
@@ -208,13 +212,14 @@ impl Lootr {
                 continue;
             }
 
-            let stack = rand::thread_rng().gen_range(d.stack.clone());
+            let stack = rng.gen_range(d.stack.clone());
 
             (0..stack).for_each(|_s| {
                 let mut citem = item.unwrap().clone();
 
-                if !self.modifiers.is_empty() && d.modify {
-                    citem = self.random_modifier()(&mut citem);
+                if !modifiers.is_empty() && d.modify {
+                    let modifier = modifiers.choose(&mut rng).unwrap();
+                    citem = modifier(&mut citem);
                 }
 
                 rewards.push(citem)
@@ -224,19 +229,18 @@ impl Lootr {
         rewards
     }
 
-    fn random_pick(&self, nesting: i16, threshold: f32) -> Option<&Item> {
+    fn random_pick(&mut self, nesting: i16, threshold: f32) -> Option<&Item> {
         let mut bag = vec![];
-        let rng = &mut rand::thread_rng();
 
-        if rng.gen::<f32>() < threshold && !self.items.is_empty() {
-            if let Some(item) = self.items.choose(&mut rand::thread_rng()) {
+        if self.rng.gen::<f32>() < threshold && !self.items.is_empty() {
+            if let Some(item) = self.items.choose(&mut self.rng) {
                 bag.push(item);
             }
         }
 
         if nesting > 0 {
-            for b in self.branchs.values() {
-                let decrease: f32 = rng.gen_range(0.0001..1.0);
+            for b in self.branchs.values_mut() {
+                let decrease: f32 = self.rng.gen_range(0.0001..1.0);
                 let new_threshold = (threshold * decrease).clamp(0.0, 1.0);
                 let new_threshold = (new_threshold * 100.0).round() / 100.0;
 
@@ -246,7 +250,7 @@ impl Lootr {
             }
         }
 
-        bag.choose(rng).copied()
+        bag.choose(&mut self.rng).copied()
     }
 
     /// Add a modifier
@@ -274,10 +278,6 @@ impl Lootr {
         children.append(&mut branchs);
 
         Node(String::from(name), children)
-    }
-
-    fn random_modifier(&self) -> &Modifier {
-        self.modifiers.choose(&mut rand::thread_rng()).unwrap()
     }
 
     fn clean(path: &'static str) -> &str {

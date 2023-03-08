@@ -34,7 +34,7 @@ mod tests {
 
     #[test]
     fn success_add_item() {
-        let mut loot = Lootr::default();
+        let mut loot = Lootr::new();
 
         loot.add(Item::a("Staff"));
 
@@ -43,7 +43,7 @@ mod tests {
 
     #[test]
     fn success_add_branch() {
-        let mut loot = Lootr::default();
+        let mut loot = Lootr::new();
 
         loot.add_branch(
             "weapons",
@@ -58,10 +58,10 @@ mod tests {
 
     #[test]
     fn success_get_branch() {
-        let mut loot = Lootr::default();
-        let mut weapons = Lootr::default();
-        let mut deadly = Lootr::default();
-        let mut fire = Lootr::default();
+        let mut loot = Lootr::new();
+        let mut weapons = Lootr::new();
+        let mut deadly = Lootr::new();
+        let mut fire = Lootr::new();
 
         fire.add(Item::an("Uzi"));
 
@@ -75,9 +75,9 @@ mod tests {
 
     #[test]
     fn success_add_item_in_branch() {
-        let mut loot = Lootr::default();
+        let mut loot = Lootr::new();
 
-        let weapons = Lootr::default();
+        let weapons = Lootr::new();
         loot.add_branch("weapons", weapons);
 
         loot.add_in(Item::an("Uzi"), "weapons");
@@ -100,7 +100,7 @@ mod tests {
 
     #[test]
     fn success_roll_root() {
-        let loot = stuffed();
+        let mut loot = stuffed();
 
         assert_eq!(
             loot.roll(ROOT, 0, 1.0).unwrap().name,
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn success_roll_any_depth1() {
-        let loot = stuffed();
+        let mut loot = stuffed();
         let picked = loot.roll(ROOT, 1, 1.0).unwrap();
 
         let expected = ["Staff", "Bat", "Uzi", "Gloves", "Boots"];
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn success_roll_any_depth1_branched() {
-        let loot = stuffed();
+        let mut loot = stuffed();
         let picked = loot.roll(Some("/equipment/leather"), 0, 1.0).unwrap();
 
         let expected = ["Jacket", "Pads"];
@@ -150,7 +150,7 @@ mod tests {
 
     #[test]
     fn success_loot_any() {
-        let loot = stuffed();
+        let mut loot = stuffed();
 
         let drops = [
             Drop {
@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn success_loot_stats() {
-        let loot = stuffed();
+        let mut loot = stuffed();
 
         let luck_for_equipment = 0.3;
         let luck_for_weapons = 0.8;
@@ -257,7 +257,7 @@ mod tests {
 
     #[test]
     fn success_loot_simple_modifier() {
-        let mut loot = Lootr::default();
+        let mut loot = Lootr::new();
         loot.add_modifier(|item| item.extend(item.name, &HashMap::from([("strength", "+10")])))
             .add(Item::a("crown"));
 
@@ -289,7 +289,7 @@ mod tests {
 
     #[test]
     fn success_loot_extend_modifier() {
-        let mut loot = Lootr::default();
+        let mut loot = Lootr::new();
         loot.add_modifier(|item| item.extend(item.name, &HashMap::from([("strength", "+10")])))
             .add(Item::from(
                 "crown",
