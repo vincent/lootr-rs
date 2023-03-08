@@ -17,21 +17,28 @@ In Lootr, lootables are organized in a tree of categories and items.
 ROOT
 ├─ Staff
 ├─ equipment
-│  ├─ Gloves
+│  ├─ Glove
 │  │  Boots
 │  └─ leather
 │     │  Jacket
 │     └─ Pads
 └─ weapons
    ├─ Bat
-   └─ Uzi
+   └─ Knife
 </pre>
 
 Then, a collection of Drops describe how items are yield from a loot action.
 
-> _equipment: 50% chances, stack of 2_
->
->    This might yield 2 items in the equipment tree, for example 1 Gloves + 1 Boots
+```
+_equipment: .5 chances, stack of 1_
+_equipment: .2 chances, stack of 2_
+_equipment: .1 chances, stack of 2_
+```
+
+This might yield items in the equipment tree, for example
+- 1 Boots, once every 2 rolls on average
+- 2 Glove, once every 5 rolls
+- 1 Knife, once every 10 rolls
 
 
 Create a loot bag
