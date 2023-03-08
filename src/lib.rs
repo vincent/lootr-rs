@@ -8,9 +8,9 @@ use ascii_tree::{
     write_tree,
     Tree::{Leaf, Node},
 };
-use rand::{seq::SliceRandom, Rng, RngCore, SeedableRng};
-use std::{collections::HashMap, fmt};
+use rand::{seq::SliceRandom, Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
+use std::{collections::HashMap, fmt};
 
 use crate::{
     drops::Drop,
@@ -86,6 +86,30 @@ impl Lootr {
         self
     }
 
+    /// Returns the PRNG seed
+    ///
+    pub fn get_seed(&self) -> [u8; 32] {
+        self.rng.get_seed()
+    }
+
+    /// Set the PRNG seed
+    ///
+    pub fn set_seed(&mut self, seed: [u8; 32]) -> &Self {
+        self.rng = Box::new(ChaCha20Rng::from_seed(seed));
+        for b in self.branchs.values_mut() {
+            b.set_seed(seed);
+        }
+        self
+    }
+
+    pub fn set_seed_from_u64(&mut self, seed: u64) -> &Self {
+        self.rng = Box::new(ChaCha20Rng::seed_from_u64(seed));
+        for b in self.branchs.values_mut() {
+            b.set_seed_from_u64(seed);
+        }
+        self
+    }
+
     /// Add an item in the given branch
     ///
     /// Returns the current lootbag
@@ -153,6 +177,8 @@ impl Lootr {
     ///
     pub fn add_branch(&mut self, path: &'static str, branch: Lootr) -> &mut Self {
         self.branchs.insert(path, branch);
+        let seed = self.get_seed();
+        self.branch_mut(path).unwrap().set_seed(seed);
         self
     }
 
@@ -202,7 +228,7 @@ impl Lootr {
     ///
     pub fn loot(&mut self, drops: &[Drop]) -> Vec<Item> {
         let mut rewards = vec![];
-        let mut rng = self.rng.to_owned();
+        let mut rng = ChaCha20Rng::from_entropy();
         let modifiers = self.modifiers.clone();
 
         for d in drops {
@@ -229,28 +255,37 @@ impl Lootr {
         rewards
     }
 
-    fn random_pick(&mut self, nesting: i16, threshold: f32) -> Option<&Item> {
+    fn random_walk(&mut self, nesting: i16, threshold: f32, push: bool) -> Option<&Item> {
         let mut bag = vec![];
 
-        if self.rng.gen::<f32>() < threshold && !self.items.is_empty() {
+        if self.rng.gen::<f32>() < threshold {
             if let Some(item) = self.items.choose(&mut self.rng) {
-                bag.push(item);
+                if push {
+                    bag.push(item)
+                }
             }
         }
 
-        if nesting > 0 {
-            for b in self.branchs.values_mut() {
-                let decrease: f32 = self.rng.gen_range(0.0001..1.0);
+        for b in self.branchs.values_mut() {
+            let decrease: f32 = self.rng.gen_range(0.0001..1.0);
+
+            if nesting > 0 {
                 let new_threshold = (threshold * decrease).clamp(0.0, 1.0);
                 let new_threshold = (new_threshold * 100.0).round() / 100.0;
 
-                if let Some(item) = b.random_pick(nesting - 1, new_threshold) {
-                    bag.push(item);
+                if let Some(item) = b.random_walk(nesting - 1, new_threshold, push) {
+                    if push {
+                        bag.push(item)
+                    }
                 }
             }
         }
 
         bag.choose(&mut self.rng).copied()
+    }
+
+    fn random_pick(&mut self, nesting: i16, threshold: f32) -> Option<&Item> {
+        self.random_walk(nesting, threshold, true)
     }
 
     /// Add a modifier

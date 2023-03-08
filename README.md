@@ -41,7 +41,7 @@ Create items.
 
 ```rust
 use lootr::{Lootr, item::Item};
-let mut loot = Lootr::default();
+let mut loot = Lootr::new();
 
 loot.add(
     Item::a("Berries")
@@ -52,7 +52,7 @@ Items can have properties.
 
 ```rust
 use lootr::{Lootr, item::{Item, Props}};
-let mut loot = Lootr::default();
+let mut loot = Lootr::new();
 
 loot.add(
     Item::from("crown", Props::from([
@@ -68,17 +68,17 @@ Organize the loot repository by adding branchs
 
 ```rust
 use lootr::Lootr;
-let mut loot = Lootr::default();
+let mut loot = Lootr::new();
 
-let weapons = loot.add_branch("weapons", Lootr::default());
-let armor = loot.add_branch("armor", Lootr::default());
+let weapons = loot.add_branch("weapons", Lootr::new());
+let armor = loot.add_branch("armor", Lootr::new());
 ```
 
 Optionnaly with items
 
 ```rust
 use lootr::{Lootr, item::Item};
-let mut loot = Lootr::default();
+let mut loot = Lootr::new();
 
 loot.add_branch("weapons", Lootr::from(vec![
     Item::a("Staff"),
@@ -120,7 +120,7 @@ A builder pattern is also available to ease drops creation.
 
 ```rust
 use lootr::{Lootr, item::Item, drops::DropBuilder};
-let mut loot = Lootr::default();
+let mut loot = Lootr::new();
 
 loot.add_branch("weapons", Lootr::from(vec![
     Item::a("Staff"),

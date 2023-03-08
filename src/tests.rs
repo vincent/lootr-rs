@@ -123,6 +123,27 @@ mod tests {
     }
 
     #[test]
+    fn success_roll_any_seeded() {
+        (1..9).for_each(|_i| {
+            let mut loot = stuffed();
+            loot.set_seed_from_u64(123);
+            let first_picked = loot.roll_any().unwrap();
+
+            (0..10).for_each(|_| {
+                let mut nloot = stuffed();
+                nloot.set_seed_from_u64(123);
+
+                let picked = nloot.roll_any().unwrap();
+
+                assert_eq!(
+                    &picked.name, &first_picked.name,
+                    "Should return the same element"
+                );
+            })
+        })
+    }
+
+    #[test]
     fn success_roll_any_depth1() {
         let mut loot = stuffed();
         let picked = loot.roll(ROOT, 1, 1.0).unwrap();
@@ -179,7 +200,7 @@ mod tests {
             DropBuilder::new()
                 .path("equipment")
                 .luck(luck_for_equipment)
-                .depth(i16::MAX)
+                .anydepth()
                 .build(),
             DropBuilder::new()
                 .path("weapons")
@@ -253,6 +274,34 @@ mod tests {
             true,
             "There should be enough weapons"
         );
+    }
+
+    #[test]
+    fn success_loot_seeded() {
+        let mut loot = stuffed();
+
+        loot.set_seed_from_u64(123);
+
+        let drops = [
+            DropBuilder::new().path("equipment").anydepth().build(),
+            DropBuilder::new().path("weapons").anydepth().build(),
+        ];
+
+        let rewards = loot.loot(&drops);
+
+        (0..10).for_each(|_f| {
+            let mut nloot = stuffed();
+            nloot.set_seed_from_u64(123);
+            let nrewards = nloot.loot(&drops);
+
+            nrewards.iter().enumerate().for_each(|(i, r)| {
+                assert_eq!(
+                    r.name,
+                    rewards.get(i).unwrap().name,
+                    "Should return same elements"
+                )
+            });
+        });
     }
 
     #[test]

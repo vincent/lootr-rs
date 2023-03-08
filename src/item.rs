@@ -25,7 +25,7 @@ pub type Modifier = fn(item: &mut Item) -> Item;
 ///
 /// The easiest way to create an Item is to use [`Item::from`](crate::item::Item::from).
 ///
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Item {
     /// Holds the item name.
     ///
