@@ -29,7 +29,7 @@ ROOT
 
 Then, a collection of Drops describe how items are yield from a loot action.
 
-```
+```ignore
 _equipment: .5 chances, stack of 1_
 _equipment: .2 chances, stack of 2_
 _equipment: .1 chances, stack of 2_
