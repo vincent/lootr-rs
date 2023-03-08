@@ -151,6 +151,32 @@ let rewards = loot.loot(&drops);
 // rewards = [ "Berries", "Plates", "Uzi", "Uzi", "Staff" ]
 ```
 
+Seeded RNG
+=====
+
+Lootr uses a deterministic PRNG (ChaCha20Rng) to yield items, that can be seeded with `.set_seed_from_u64()`.
+
+Loot from this Lootr instance will then be consitent and reproductible.
+
+```rust
+use lootr::{Lootr, item::Item, drops::DropBuilder};
+
+(0..10).for_each(|_f| {
+
+    let mut loot = Lootr::from(vec![
+        Item::named("Socks"),
+        Item::named("Boots"),
+    ]);
+
+    loot.set_seed_from_u64(1234);
+
+    loot.loot(&[DropBuilder::new().build()]);
+    loot.loot(&[DropBuilder::new().build()]);
+
+    // Will always loot Boots, then Socks, then Socks, then Boots ..
+})
+```
+
 Modifiers
 =====
 The library includes a basic modifiers system.
