@@ -10,7 +10,7 @@ use ascii_tree::{
 };
 use rand::{seq::SliceRandom, Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
-use std::{collections::HashMap, fmt};
+use std::{collections::BTreeMap, fmt};
 
 use crate::{
     drops::Drop,
@@ -22,9 +22,8 @@ const SEPARATOR: char = '/';
 
 pub struct Lootr {
     items: Vec<Item>,
-    branchs: HashMap<&'static str, Lootr>,
+    branchs: BTreeMap<&'static str, Lootr>,
     modifiers: Vec<Modifier>,
-    rng: Box<ChaCha20Rng>,
 }
 
 impl fmt::Display for Lootr {
@@ -46,15 +45,14 @@ impl Lootr {
     pub fn from(items: Vec<Item>) -> Self {
         Self {
             items,
-            branchs: HashMap::new(),
+            branchs: BTreeMap::new(),
             modifiers: vec![],
-            rng: Box::new(ChaCha20Rng::from_entropy()),
         }
     }
 
     /// Return this lootbag branchs
     ///
-    pub fn branchs(&self) -> &HashMap<&str, Lootr> {
+    pub fn branchs(&self) -> &BTreeMap<&str, Lootr> {
         &self.branchs
     }
 
@@ -86,30 +84,6 @@ impl Lootr {
         self
     }
 
-    /// Returns the PRNG seed
-    ///
-    pub fn get_seed(&self) -> [u8; 32] {
-        self.rng.get_seed()
-    }
-
-    /// Set the PRNG seed
-    ///
-    pub fn set_seed(&mut self, seed: [u8; 32]) -> &Self {
-        self.rng = Box::new(ChaCha20Rng::from_seed(seed));
-        for b in self.branchs.values_mut() {
-            b.set_seed(seed);
-        }
-        self
-    }
-
-    pub fn set_seed_from_u64(&mut self, seed: u64) -> &Self {
-        self.rng = Box::new(ChaCha20Rng::seed_from_u64(seed));
-        for b in self.branchs.values_mut() {
-            b.set_seed_from_u64(seed);
-        }
-        self
-    }
-
     /// Add an item in the given branch
     ///
     /// Returns the current lootbag
@@ -126,7 +100,7 @@ impl Lootr {
     /// Returns the branch at the given path.
     ///
     pub fn branch_mut(&mut self, path: &'static str) -> Option<&mut Lootr> {
-        let cname = Self::clean(path);
+        let cname = path.trim_matches(SEPARATOR);
 
         // simple case
         if self.branchs.contains_key(&cname) {
@@ -150,7 +124,7 @@ impl Lootr {
     /// If the branch does not exit yet, `None` is returned
     ///
     pub fn branch(&self, path: &'static str) -> Option<&Lootr> {
-        let cname = Self::clean(path);
+        let cname = path.trim_matches(SEPARATOR);
 
         // simple case
         if self.branchs.contains_key(&cname) {
@@ -177,8 +151,6 @@ impl Lootr {
     ///
     pub fn add_branch(&mut self, path: &'static str, branch: Lootr) -> &mut Self {
         self.branchs.insert(path, branch);
-        let seed = self.get_seed();
-        self.branch_mut(path).unwrap().set_seed(seed);
         self
     }
 
@@ -196,43 +168,82 @@ impl Lootr {
         bag
     }
 
+    /// Add a modifier
+    ///
+    pub fn add_modifier(&mut self, modifier: Modifier) -> &mut Self {
+        self.modifiers.push(modifier);
+        self
+    }
+
     /// Pick a random item from the specified branch
     ///
     /// Returns `Some(Item)` or `None`
     ///
     pub fn roll(
-        &mut self,
+        &self,
         catalog_path: Option<&'static str>,
         nesting: i16,
         threshold: f32,
     ) -> Option<&Item> {
+        self.roll_seeded(
+            catalog_path,
+            nesting,
+            threshold,
+            &mut ChaCha20Rng::from_entropy(),
+        )
+    }
+
+    /// Pick a random item from the specified branch, given a PRNG
+    ///
+    /// Returns `Some(Item)` or `None`
+    ///
+    pub fn roll_seeded<R>(
+        &self,
+        catalog_path: Option<&'static str>,
+        nesting: i16,
+        threshold: f32,
+        rng: &mut R,
+    ) -> Option<&Item>
+    where
+        R: Rng + ?Sized,
+    {
         let branch = match catalog_path {
             None => self,
-            Some(path) => self.branch_mut(path).unwrap(),
+            Some(path) => self.branch(path).unwrap(),
         };
 
-        branch.random_pick(nesting, threshold).to_owned()
+        branch.random_pick(nesting, threshold, rng).to_owned()
     }
 
     /// Pick a random item anywhere in that branch
     ///
     /// Returns `Some(Item)` or `None`
     ///
-    pub fn roll_any(&mut self) -> Option<&Item> {
-        self.roll(ROOT, i16::MAX, 1.0)
+    pub fn roll_any(&self) -> Option<&Item> {
+        self.roll_seeded(ROOT, i16::MAX, 1.0, &mut ChaCha20Rng::from_entropy())
     }
 
     /// Roll against a looting table
     ///
     /// Returns a vec of Item
     ///
-    pub fn loot(&mut self, drops: &[Drop]) -> Vec<Item> {
+    pub fn loot(&self, drops: &[Drop]) -> Vec<Item> {
+        self.loot_seeded(drops, &mut ChaCha20Rng::from_entropy())
+    }
+
+    /// Roll against a looting table, given a PRNG
+    ///
+    /// Returns a vec of Item
+    ///
+    pub fn loot_seeded<R>(&self, drops: &[Drop], rng: &mut R) -> Vec<Item>
+    where
+        R: Rng + ?Sized,
+    {
         let mut rewards = vec![];
-        let mut rng = ChaCha20Rng::from_entropy();
         let modifiers = self.modifiers.clone();
 
         for d in drops {
-            let item = self.roll(d.path, d.depth, d.luck);
+            let item = self.roll_seeded(d.path, d.depth, d.luck, rng);
 
             if item.is_none() {
                 continue;
@@ -244,7 +255,7 @@ impl Lootr {
                 let mut citem = item.unwrap().clone();
 
                 if !modifiers.is_empty() && d.modify {
-                    let modifier = modifiers.choose(&mut rng).unwrap();
+                    let modifier = modifiers.choose(rng).unwrap();
                     citem = modifier(&mut citem);
                 }
 
@@ -255,44 +266,31 @@ impl Lootr {
         rewards
     }
 
-    fn random_walk(&mut self, nesting: i16, threshold: f32, push: bool) -> Option<&Item> {
+    fn random_pick<R>(&self, nesting: i16, threshold: f32, rng: &mut R) -> Option<&Item>
+    where
+        R: Rng + ?Sized,
+    {
         let mut bag = vec![];
 
-        if self.rng.gen::<f32>() < threshold {
-            if let Some(item) = self.items.choose(&mut self.rng) {
-                if push {
-                    bag.push(item)
-                }
+        if let Some(item) = self.items.choose(rng) {
+            if rng.gen::<f32>() < threshold {
+                bag.push(item);
             }
         }
 
-        for b in self.branchs.values_mut() {
-            let decrease: f32 = self.rng.gen_range(0.0001..1.0);
+        for b in self.branchs.values() {
+            let decrease: f32 = rng.gen_range(0.0001..1.0);
+            let new_threshold = (threshold * decrease).clamp(0.0, 1.0);
+            let new_threshold = (new_threshold * 100.0).round() / 100.0;
 
             if nesting > 0 {
-                let new_threshold = (threshold * decrease).clamp(0.0, 1.0);
-                let new_threshold = (new_threshold * 100.0).round() / 100.0;
-
-                if let Some(item) = b.random_walk(nesting - 1, new_threshold, push) {
-                    if push {
-                        bag.push(item)
-                    }
+                if let Some(item) = b.random_pick(nesting - 1, new_threshold, rng) {
+                    bag.push(item);
                 }
             }
         }
 
-        bag.choose(&mut self.rng).copied()
-    }
-
-    fn random_pick(&mut self, nesting: i16, threshold: f32) -> Option<&Item> {
-        self.random_walk(nesting, threshold, true)
-    }
-
-    /// Add a modifier
-    ///
-    pub fn add_modifier(&mut self, modifier: Modifier) -> &mut Self {
-        self.modifiers.push(modifier);
-        self
+        bag.choose(rng).copied()
     }
 
     fn fmt_node(&self, name: &str) -> ascii_tree::Tree {
@@ -313,9 +311,5 @@ impl Lootr {
         children.append(&mut branchs);
 
         Node(String::from(name), children)
-    }
-
-    fn clean(path: &'static str) -> &str {
-        path.trim_matches(SEPARATOR)
     }
 }

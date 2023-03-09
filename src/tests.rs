@@ -5,6 +5,8 @@ mod tests {
         item::Props,
         Item, Lootr, ROOT,
     };
+    use rand::SeedableRng;
+    use rand_chacha::ChaCha20Rng;
     use std::{collections::HashMap, fmt};
 
     #[test]
@@ -100,7 +102,7 @@ mod tests {
 
     #[test]
     fn success_roll_root() {
-        let mut loot = stuffed();
+        let loot = stuffed();
 
         assert_eq!(
             loot.roll(ROOT, 0, 1.0).unwrap().name,
@@ -111,7 +113,7 @@ mod tests {
 
     #[test]
     fn success_roll_any() {
-        let mut loot = stuffed();
+        let loot = stuffed();
         let picked = loot.roll_any().unwrap();
 
         let expected = ["Staff", "Bat", "Uzi", "Gloves", "Boots", "Jacket", "Pads"];
@@ -124,28 +126,39 @@ mod tests {
 
     #[test]
     fn success_roll_any_seeded() {
-        (1..9).for_each(|_i| {
-            let mut loot = stuffed();
-            loot.set_seed_from_u64(123);
-            let first_picked = loot.roll_any().unwrap();
+        (1..9).for_each(|i| {
+            let loot = stuffed();
+            let first_picked = loot
+                .roll_seeded(
+                    ROOT,
+                    i16::MAX,
+                    1.0,
+                    &mut ChaCha20Rng::seed_from_u64(123 * i),
+                )
+                .unwrap();
 
-            (0..10).for_each(|_| {
-                let mut nloot = stuffed();
-                nloot.set_seed_from_u64(123);
-
-                let picked = nloot.roll_any().unwrap();
+            (1..9).for_each(|_| {
+                let nloot = stuffed();
+                let picked = nloot
+                    .roll_seeded(
+                        ROOT,
+                        i16::MAX,
+                        1.0,
+                        &mut ChaCha20Rng::seed_from_u64(123 * i),
+                    )
+                    .unwrap();
 
                 assert_eq!(
                     &picked.name, &first_picked.name,
-                    "Should return the same element"
+                    "Should return the same elements"
                 );
-            })
+            });
         })
     }
 
     #[test]
     fn success_roll_any_depth1() {
-        let mut loot = stuffed();
+        let loot = stuffed();
         let picked = loot.roll(ROOT, 1, 1.0).unwrap();
 
         let expected = ["Staff", "Bat", "Uzi", "Gloves", "Boots"];
@@ -158,7 +171,7 @@ mod tests {
 
     #[test]
     fn success_roll_any_depth1_branched() {
-        let mut loot = stuffed();
+        let loot = stuffed();
         let picked = loot.roll(Some("/equipment/leather"), 0, 1.0).unwrap();
 
         let expected = ["Jacket", "Pads"];
@@ -171,7 +184,7 @@ mod tests {
 
     #[test]
     fn success_loot_any() {
-        let mut loot = stuffed();
+        let loot = stuffed();
 
         let drops = [
             Drop {
@@ -192,7 +205,7 @@ mod tests {
 
     #[test]
     fn success_loot_stats() {
-        let mut loot = stuffed();
+        let loot = stuffed();
 
         let luck_for_equipment = 0.3;
         let luck_for_weapons = 0.8;
@@ -214,7 +227,7 @@ mod tests {
         let mut overall_count = 0;
         let mut overall_rewards = HashMap::<&'static str, i32>::new();
 
-        (0..rolls).for_each(|_f| {
+        (0..rolls).for_each(|_| {
             loot.loot(&drops).iter().for_each(|r| {
                 let current = match overall_rewards.get(r.name) {
                     Some(number) => number.clone(),
@@ -278,21 +291,17 @@ mod tests {
 
     #[test]
     fn success_loot_seeded() {
-        let mut loot = stuffed();
-
-        loot.set_seed_from_u64(123);
-
+        let loot = stuffed();
         let drops = [
             DropBuilder::new().path("equipment").anydepth().build(),
             DropBuilder::new().path("weapons").anydepth().build(),
         ];
 
-        let rewards = loot.loot(&drops);
+        let rewards = loot.loot_seeded(&drops, &mut ChaCha20Rng::seed_from_u64(123));
 
-        (0..10).for_each(|_f| {
-            let mut nloot = stuffed();
-            nloot.set_seed_from_u64(123);
-            let nrewards = nloot.loot(&drops);
+        (0..10).for_each(|_| {
+            let nloot = stuffed();
+            let nrewards = nloot.loot_seeded(&drops, &mut ChaCha20Rng::seed_from_u64(123));
 
             nrewards.iter().enumerate().for_each(|(i, r)| {
                 assert_eq!(

@@ -30,9 +30,9 @@ ROOT
 Then, a collection of Drops describe how items are yield from a loot action.
 
 ```ignore
-_equipment: .5 chances, stack of 1_
-_equipment: .2 chances, stack of 2_
-_equipment: .1 chances, stack of 2_
+equipment: .5 chances, stack of 1
+equipment: .2 chances, stack of 2
+equipment: .1 chances, stack of 2
 ```
 
 This might yield items in the equipment tree, for example
@@ -161,24 +161,24 @@ let rewards = loot.loot(&drops);
 Seeded RNG
 =====
 
-Lootr uses a deterministic PRNG (ChaCha20Rng) to yield items, that can be seeded with `.set_seed_from_u64()`.
-
-Loot from this Lootr instance will then be consitent and reproductible.
+`Lootr.loot_seeded()` takes a PRNG arguments to yield items in a consitent and reproductible way.
 
 ```rust
 use lootr::{Lootr, item::Item, drops::DropBuilder};
+use rand_chacha::ChaCha20Rng;
+use rand::SeedableRng;
+
+let rng = &mut ChaCha20Rng::seed_from_u64(123);
 
 (0..10).for_each(|_f| {
-
     let mut loot = Lootr::from(vec![
         Item::named("Socks"),
         Item::named("Boots"),
     ]);
+    let drops = [DropBuilder::new().build()];
 
-    loot.set_seed_from_u64(1234);
-
-    loot.loot(&[DropBuilder::new().build()]);
-    loot.loot(&[DropBuilder::new().build()]);
+    loot.loot_seeded(&drops, rng);
+    loot.loot_seeded(&drops, rng);
 
     // Will always loot Boots, then Socks, then Socks, then Boots ..
 })
