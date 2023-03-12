@@ -224,3 +224,8 @@ Tests
 
 `cargo test`
 
+Bump version
+=====
+
+`cargo bump minor`
+
