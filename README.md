@@ -61,12 +61,16 @@ Items can have properties.
 use lootr::{Lootr, item::{Item, Props}};
 let mut loot = Lootr::new();
 
-loot.add(
-    Item::from("crown", Props::from([
-        ("strength", "10"),
-        ("charisma", "+100")
-    ]))
-);
+let item = Item::from("crown", Props::from([
+    ("strength", "10"),
+    ("charisma", "+100")
+]));
+
+loot.add(item);
+
+// Items can printed
+// crown{strength=10,charisma=+100}
+
 ```
 
 Each level is composed by a list of `.items` and nested `.branchs`.

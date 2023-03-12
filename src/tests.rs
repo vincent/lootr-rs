@@ -28,7 +28,22 @@ mod tests {
     }
 
     #[test]
-    fn success_display() {
+    fn success_item_display() {
+        let item = Item::from(
+            "crown",
+            Props::from([("strength", "10"), ("charisma", "+100")]),
+        );
+        // println!("{}", item);
+        let output = fmt::format(format_args!("{}", item));
+        assert_eq!(
+            output == "crown{strength=10,charisma=+100}"
+                || output == "crown{charisma=+100,strength=10}",
+            true
+        );
+    }
+
+    #[test]
+    fn success_branch_display() {
         // println!("{}", stuffed());
         let output = fmt::format(format_args!("{}", stuffed()));
         assert_eq!(output.split("─").count(), 10);

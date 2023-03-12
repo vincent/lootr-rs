@@ -8,7 +8,10 @@
 //! Item [`Props`](crate::item::Props) can be queried directly with `has_prop()`, `get_prop()` and `set_prop()`
 //!
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{self, format, Display},
+};
 
 /// Holds the item properties in an `HashMap<&str, &str>`.
 ///
@@ -35,6 +38,18 @@ pub struct Item<'a> {
     ///
     pub props: Option<Props<'a>>,
 }
+
+impl<'a> Display for Item<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let props = self.props.clone().unwrap_or_default();
+        let props: Vec<String> = props
+            .iter()
+            .map(|(key, value)| format(format_args!("{}={}", key, value)))
+            .collect::<_>();
+        write!(f, "{}{{{}}}", self.name, props.join(","))
+    }
+}
+
 impl<'a> Item<'a> {
     /// Create an Item with just a name.
     ///
