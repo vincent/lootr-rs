@@ -20,20 +20,20 @@ use crate::{
 pub const ROOT: Option<&str> = None;
 const SEPARATOR: char = '/';
 
-pub struct Lootr {
-    items: Vec<Item>,
-    branchs: BTreeMap<&'static str, Lootr>,
+pub struct Lootr<'a> {
+    items: Vec<Item<'a>>,
+    branchs: BTreeMap<&'a str, Lootr<'a>>,
     modifiers: Vec<Modifier>,
 }
 
-impl fmt::Display for Lootr {
+impl<'a> fmt::Display for Lootr<'a> {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write_tree(f, &self.fmt_node("ROOT"))
     }
 }
 
-impl Lootr {
+impl<'a> Lootr<'a> {
     /// Create a new lootbag
     ///
     pub fn new() -> Self {
@@ -42,7 +42,7 @@ impl Lootr {
 
     /// Create a new lootbag from given items
     ///
-    pub fn from(items: Vec<Item>) -> Self {
+    pub fn from(items: Vec<Item<'a>>) -> Self {
         Self {
             items,
             branchs: BTreeMap::new(),
@@ -52,7 +52,7 @@ impl Lootr {
 
     /// Return this lootbag branchs
     ///
-    pub fn branchs(&self) -> &BTreeMap<&str, Lootr> {
+    pub fn branchs(&self) -> &BTreeMap<&str, Lootr<'a>> {
         &self.branchs
     }
 
@@ -78,7 +78,7 @@ impl Lootr {
     ///
     /// Returns the current lootbag
     ///
-    pub fn add(&mut self, item: Item) -> &mut Self {
+    pub fn add(&mut self, item: Item<'a>) -> &mut Self {
         self.items.push(item);
 
         self
@@ -88,7 +88,7 @@ impl Lootr {
     ///
     /// Returns the current lootbag
     ///
-    pub fn add_in(&mut self, item: Item, path: &'static str) -> &mut Self {
+    pub fn add_in(&mut self, item: Item<'a>, path: &'a str) -> &mut Self {
         match self.branch_mut(path) {
             None => panic!("this path does not exist"),
             Some(branch) => branch.add(item),
@@ -99,7 +99,7 @@ impl Lootr {
 
     /// Returns the branch at the given path.
     ///
-    pub fn branch_mut(&mut self, path: &'static str) -> Option<&mut Lootr> {
+    pub fn branch_mut(&mut self, path: &'a str) -> Option<&mut Lootr<'a>> {
         let cname = path.trim_matches(SEPARATOR);
 
         // simple case
@@ -123,7 +123,7 @@ impl Lootr {
     /// Returns the branch at the given path.
     /// If the branch does not exit yet, `None` is returned
     ///
-    pub fn branch(&self, path: &'static str) -> Option<&Lootr> {
+    pub fn branch(&self, path: &'a str) -> Option<&Lootr<'a>> {
         let cname = path.trim_matches(SEPARATOR);
 
         // simple case
@@ -149,7 +149,7 @@ impl Lootr {
 
     /// Add a branch, return self (the owner)
     ///
-    pub fn add_branch(&mut self, path: &'static str, branch: Lootr) -> &mut Self {
+    pub fn add_branch(&mut self, path: &'a str, branch: Lootr<'a>) -> &mut Self {
         self.branchs.insert(path, branch);
         self
     }
@@ -181,7 +181,7 @@ impl Lootr {
     ///
     pub fn roll(
         &self,
-        catalog_path: Option<&'static str>,
+        catalog_path: Option<&'a str>,
         nesting: i16,
         threshold: f32,
     ) -> Option<&Item> {
@@ -199,11 +199,11 @@ impl Lootr {
     ///
     pub fn roll_seeded<R>(
         &self,
-        catalog_path: Option<&'static str>,
+        catalog_path: Option<&'a str>,
         nesting: i16,
         threshold: f32,
         rng: &mut R,
-    ) -> Option<&Item>
+    ) -> Option<&Item<'a>>
     where
         R: Rng + ?Sized,
     {
@@ -212,7 +212,7 @@ impl Lootr {
             Some(path) => self.branch(path).unwrap(),
         };
 
-        branch.random_pick(nesting, threshold, rng).to_owned()
+        branch.random_pick(nesting, threshold, rng)
     }
 
     /// Pick a random item anywhere in that branch
@@ -239,8 +239,7 @@ impl Lootr {
     where
         R: Rng + ?Sized,
     {
-        let mut rewards = vec![];
-        let modifiers = self.modifiers.clone();
+        let mut rewards: Vec<Item> = vec![];
 
         for d in drops {
             let item = self.roll_seeded(d.path, d.depth, d.luck, rng);
@@ -249,24 +248,27 @@ impl Lootr {
                 continue;
             }
 
-            let stack = rng.gen_range(d.stack.clone());
+            let citem: Item = item.unwrap().clone();
+            let stack_max = rng.gen_range(d.stack.clone());
 
-            (0..stack).for_each(|_s| {
-                let mut citem = item.unwrap().clone();
-
-                if !modifiers.is_empty() && d.modify {
-                    let modifier = modifiers.choose(rng).unwrap();
-                    citem = modifier(&mut citem);
-                }
-
-                rewards.push(citem)
-            });
+            rewards.append(
+                &mut (0..stack_max)
+                    .map(|_| {
+                        if !self.modifiers.is_empty() && d.modify {
+                            let modifier = self.modifiers.choose(rng).unwrap();
+                            modifier(citem.clone())
+                        } else {
+                            citem.clone()
+                        }
+                    })
+                    .collect::<Vec<Item>>(),
+            );
         }
 
         rewards
     }
 
-    fn random_pick<R>(&self, nesting: i16, threshold: f32, rng: &mut R) -> Option<&Item>
+    fn random_pick<R>(&self, nesting: i16, threshold: f32, rng: &mut R) -> Option<&Item<'a>>
     where
         R: Rng + ?Sized,
     {

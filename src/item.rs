@@ -12,11 +12,11 @@ use std::collections::HashMap;
 
 /// Holds the item properties in an `HashMap<&str, &str>`.
 ///
-pub type Props = HashMap<&'static str, &'static str>;
+pub type Props<'a> = HashMap<&'a str, &'a str>;
 
-/// Describe a modifier helper function.
+/// Holds a modifier helper function.
 ///
-pub type Modifier = fn(item: &mut Item) -> Item;
+pub type Modifier = fn(item: Item) -> Item;
 
 /// Holds a Lootr Item.
 ///
@@ -26,16 +26,16 @@ pub type Modifier = fn(item: &mut Item) -> Item;
 /// The easiest way to create an Item is to use [`Item::from`](crate::item::Item::from).
 ///
 #[derive(Debug, Clone)]
-pub struct Item {
+pub struct Item<'a> {
     /// Holds the item name.
     ///
-    pub name: &'static str,
+    pub name: &'a str,
 
     /// Holds the item properties.
     ///
-    pub props: Option<Props>,
+    pub props: Option<Props<'a>>,
 }
-impl Item {
+impl<'a> Item<'a> {
     /// Create an Item with just a name.
     ///
     /// # Examples
@@ -45,7 +45,7 @@ impl Item {
     ///
     /// let hat = Item::a("hat");
     /// ```
-    pub fn a(name: &'static str) -> Self {
+    pub fn a(name: &'a str) -> Self {
         Self { name, props: None }
     }
 
@@ -60,7 +60,7 @@ impl Item {
     ///
     /// let hat = Item::an("ascot");
     /// ```
-    pub fn an(name: &'static str) -> Self {
+    pub fn an(name: &'a str) -> Self {
         Item::a(name)
     }
 
@@ -75,7 +75,7 @@ impl Item {
     ///
     /// let hat = Item::named("greg");
     /// ```
-    pub fn named(name: &'static str) -> Self {
+    pub fn named(name: &'a str) -> Self {
         Item::a(name)
     }
 
@@ -91,7 +91,7 @@ impl Item {
     ///     ("size", "small"),
     /// ]));
     /// ```
-    pub fn from(name: &'static str, props: Props) -> Self {
+    pub fn from(name: &'a str, props: Props<'a>) -> Self {
         Item {
             name,
             props: Some(props),
@@ -111,14 +111,14 @@ impl Item {
     ///     ("size", "large"),
     /// ]));
     ///
-    /// let cap = hat.extend("cap", &Props::from([
+    /// let cap = hat.extend("cap", Props::from([
     ///     ("size", "small"),
     /// ]));
     ///
     /// assert_eq!(cap.get_prop("color"), Some("black"));
     /// assert_eq!(cap.get_prop("size"), Some("small"));
     /// ```
-    pub fn extend(&self, name: &'static str, ext_props: &Props) -> Self {
+    pub fn extend(&self, name: &'a str, ext_props: Props<'a>) -> Self {
         let mut new_props: HashMap<&str, &str> = HashMap::new();
         new_props.extend(self.props.clone().unwrap_or_default().iter());
         new_props.extend(ext_props.iter());
@@ -143,7 +143,7 @@ impl Item {
     ///
     /// assert_eq!(hat.has_prop("size"), true)
     /// ```
-    pub fn has_prop(&self, key: &'static str) -> bool {
+    pub fn has_prop(&self, key: &str) -> bool {
         match &self.props {
             None => false,
             Some(props) => props.contains_key(key),
@@ -165,7 +165,7 @@ impl Item {
     ///
     /// assert_eq!(hat.get_prop("size"), Some("small"))
     /// ```
-    pub fn get_prop(&self, key: &'static str) -> Option<&str> {
+    pub fn get_prop(&self, key: &str) -> Option<&str> {
         match &self.props {
             None => None,
             Some(props) => props.get(key).copied(),
@@ -191,7 +191,7 @@ impl Item {
     /// assert_eq!(hat.get_prop("fancy"), Some("yes"));
     /// assert_eq!(hat.get_prop("size"), Some("large"));
     /// ```
-    pub fn set_prop(&mut self, key: &'static str, value: &'static str) -> &mut Self {
+    pub fn set_prop<'b: 'a>(&mut self, key: &'b str, value: &'b str) -> &mut Self {
         let mut new_props: HashMap<&str, &str> = HashMap::new();
         new_props.extend(self.props.clone().unwrap_or_default().iter());
         new_props.insert(key, value);

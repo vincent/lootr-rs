@@ -168,8 +168,6 @@ use lootr::{Lootr, item::Item, drops::DropBuilder};
 use rand_chacha::ChaCha20Rng;
 use rand::SeedableRng;
 
-let rng = &mut ChaCha20Rng::seed_from_u64(123);
-
 (0..10).for_each(|_f| {
     let mut loot = Lootr::from(vec![
         Item::named("Socks"),
@@ -177,8 +175,11 @@ let rng = &mut ChaCha20Rng::seed_from_u64(123);
     ]);
     let drops = [DropBuilder::new().build()];
 
+    let rng = &mut ChaCha20Rng::seed_from_u64(123);
+
     loot.loot_seeded(&drops, rng);
     loot.loot_seeded(&drops, rng);
+    // ...
 
     // Will always loot Boots, then Socks, then Socks, then Boots ..
 })
@@ -186,39 +187,32 @@ let rng = &mut ChaCha20Rng::seed_from_u64(123);
 
 Modifiers
 =====
-The library includes a basic modifiers system.
 
-Add some modifiers to affect the properties of each looted item with `addModifiers`.
-* `name` modifier will be used as simple suffixes. Or, if it contains one or more `$property`, each property name will be replaced.
-* other properties will be handled as the following
-```ignore
-loot.add({ name: "Staff", color: "golden" })
-loot.addModifiers([
-    { name:    "from the shadows" },
-    { name:    "A $color $name from the gods" },
-    { agility: 5 },
-    { force:   "*2" },
-    { intell:  "2-10" },
-    { name:    "A $color $name from the gods", force: "+4" }
-])
-```
+`Lootr.add_modifier()` allows to give some Item transformers, call Modifiers.
 
-Then, at loot time:
-```ignore
-deadMonster.drops = [
-    {from: "/equipment", stack:2, modify:true }
-]
+Modifiers are simple functions that return a new Item from a given one.
 
-// Loot your reward from a dead monster
-var rewards = loot.loot(deadMonster.drops)
+```rust
+use lootr::{Lootr, item::{Item, Props}, drops::DropBuilder};
+let mut loot = Lootr::new();
+loot.add(Item::a("crown"));
 
-rewards = [
-    // some of these could drop
-    {name:"Staff from the shadows"},
-    {name:"Staff", intell: 6},
-    {name:"A golden staff from the gods"},
-    {name:"A golden staff from the gods", force:4 }
-]
+fn with_strength(source: Item) -> Item {
+    source.extend(source.name, Props::from([
+        ("strength", "10"),
+    ]))
+}
+
+loot.add_modifier(with_strength);
+
+//
+// Then, at loot time:
+
+let drops = [DropBuilder::new().modify().build()];
+
+let rewards = loot.loot(&drops);
+
+// rewards = [ crown{strength=10} ]
 ```
 
 Tests

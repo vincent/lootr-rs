@@ -175,6 +175,22 @@ impl DropBuilder {
         self
     }
 
+    /// Set the `modify` flag to true, for the future [`Drop`](crate::drops::Drop) object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use lootr::drops::DropBuilder;
+    ///
+    /// let drop = DropBuilder::new()
+    ///     .modify()
+    ///     .build();
+    /// ```
+    pub fn modify(mut self) -> DropBuilder {
+        self.modify = true;
+        self
+    }
+
     /// Finish a build sequence, and create a [`Drop`](crate::drops::Drop) object.
     ///
     /// # Examples

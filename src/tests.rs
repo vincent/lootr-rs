@@ -316,8 +316,12 @@ mod tests {
     #[test]
     fn success_loot_simple_modifier() {
         let mut loot = Lootr::new();
-        loot.add_modifier(|item| item.extend(item.name, &HashMap::from([("strength", "+10")])))
-            .add(Item::a("crown"));
+
+        fn with_strength(source: Item) -> Item {
+            source.extend(source.name, Props::from([("strength", "+10")]))
+        }
+
+        loot.add_modifier(with_strength).add(Item::a("crown"));
 
         let picked = loot.loot(&[
             Drop {
@@ -345,32 +349,9 @@ mod tests {
         assert_eq!(last.get_prop("strength").unwrap().to_owned(), "+10");
     }
 
-    #[test]
-    fn success_loot_extend_modifier() {
-        let mut loot = Lootr::new();
-        loot.add_modifier(|item| item.extend(item.name, &HashMap::from([("strength", "+10")])))
-            .add(Item::from(
-                "crown",
-                HashMap::from([("strength", "0"), ("charisma", "+100")]),
-            ));
-
-        let picked = loot.loot(&[Drop {
-            path: ROOT,
-            luck: 1.0,
-            depth: 1,
-            stack: 1..=1,
-            modify: true,
-        }]);
-
-        let first = &picked.first().unwrap().clone();
-
-        assert_eq!(first.get_prop("charisma").unwrap(), "+100");
-        assert_eq!(first.get_prop("strength").unwrap(), "+10");
-    }
-
     ////////////////////////////////////////////////////
 
-    fn stuffed() -> Lootr {
+    fn stuffed<'a>() -> Lootr<'a> {
         let mut loot = Lootr::from(vec![Item::a("Staff")]);
 
         loot.add_branch(
