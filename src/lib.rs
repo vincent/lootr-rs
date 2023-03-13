@@ -300,7 +300,7 @@ impl<'a> Lootr<'a> {
         children.push(Leaf(
             self.items()
                 .iter()
-                .map(|item| String::from(item.name))
+                .map(|item| format!("{}", item))
                 .collect(),
         ));
 
@@ -313,4 +313,79 @@ impl<'a> Lootr<'a> {
 
         Node(String::from(name), children)
     }
+}
+
+#[macro_export]
+macro_rules! a {
+    ( $x:expr ) => {
+        Item::name($x)
+    }
+}
+
+#[macro_export]
+macro_rules! bag {
+
+    // ($(@ $b1:ident $($i1:ident $($a1:ident = $v1:expr) *;),* $(@$tail:meta |),* |)*) => {
+    // ($(@ $branch:ident $($item:ident $($a1:ident = $v1:expr) *,);* |)*) => { // OK
+    // ($(@ $branch:ident $($item:ident $($a1:ident = $v1:expr) *,);* $(@ $b2:ident $($i2:ident $($a2:ident = $v2:expr) *,);* |)* |)*) => { // OK
+    ($
+        (@ $b1:ident $($i1:ident $($a1:ident = $v1:expr) *,)* 
+            $(@ $b2:ident $($i2:ident $($a2:ident = $v2:expr) *,)*
+                $(@ $b3:ident $($i3:ident $($a3:ident = $v3:expr) *,)*
+                .)*
+            .)* 
+        .)*
+    ) => {
+        {
+            let mut loot = Lootr::new();
+            loot.add(Item::named("test"));
+
+            $( // for each $b1
+                let mut b1 = Lootr::new();
+
+                $( // for each $i1
+                    let mut i1 = Item::named(stringify!($i1));
+                    $( // for each $a1
+                        i1.set_prop(stringify!($a1), stringify!($v1));
+                    )*
+                    b1.add(i1);
+                )*
+
+                $( // for each $b2
+                    let mut b2 = Lootr::new();
+    
+                    $( // for each $i1
+                        let mut i2 = Item::named(stringify!($i2));
+                        $( // for each $a1
+                            i2.set_prop(stringify!($a2), stringify!($v2));
+                        )*
+                        b2.add(i2);
+                    )*
+
+                    $( // for each $b3
+                        let mut b3 = Lootr::new();
+        
+                        $( // for each $i3
+        
+                            let mut i3 = Item::named(stringify!($i3));
+                            $( // for each $a3
+                                i3.set_prop(stringify!($a3), stringify!($v3));
+                            )*
+                            b3.add(i3);
+                        )*
+        
+                        b2.add_branch(stringify!($b3), b3);
+                    )*
+                    b1.add_branch(stringify!($b2), b2);
+                )*
+                loot.add_branch(stringify!($b1), b1);
+            )*
+
+            loot
+        }
+    };
+
+    ($e:expr, $($es:expr),+) => {
+        println("recursiooooooonnnn !!");
+    };
 }

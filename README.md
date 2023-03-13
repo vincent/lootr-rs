@@ -219,6 +219,118 @@ let rewards = loot.loot(&drops);
 // rewards = [ crown{strength=10} ]
 ```
 
+Macros
+=====
+
+To make tha building easier, you can use the `bag!` macro.
+
+```rust
+let loot = bag! {
+    @Weapons
+        Knife attack="1" desc="A simple knife",
+        @Wooden
+            BarkShield attack="0" magic_power="10" desc="A wooden shield reinforced with bark, providing magic power",
+            @Staffs
+                WoodenStaff attack="5" magic_power="10" desc="A wooden staff imbued with magic power",
+                CrystalStaff attack="8" magic_power="15" ice_damage="10" desc="A crystal staff with ice elemental damage",
+                ElementalStaff attack="12" magic_power="20" thunder_damage="15" desc="An elemental staff with thunder elemental damage",
+                .
+            @Bows
+                ShortBow attack="10" accuracy="10" desc="A short bow with high accuracy",
+                LongBow attack="20" accuracy="20" ice_damage="10" desc="A long bow with ice elemental damage",
+                .
+            .
+        @Swords
+            ShortSword attack="10" critical="5" desc="A short sword with increased critical hit rate",
+            LongSword attack="15" critical="10" desc="A long sword with a high critical hit rate",
+            TwoHandedSword attack="20" critical="15" desc="A two-handed sword with a very high critical hit rate",
+            .
+        @Axes
+            BattleAxe attack="12" critical="8" desc="A battle axe with increased critical hit rate",
+            WarAxe attack="14" critical="9" desc="A war axe with a high critical hit rate",
+            .
+        @Mace
+            MorningStar attack="13" critical="7" desc="A mace with increased critical hit rate",
+            Flail attack="16" critical="11" desc="A flail with a very high critical hit rate",
+            .
+        .
+    @Armors
+        Shirt defense="0" desc="A simple shirt",
+        @LightArmor
+            LeatherArmor defense="5" agility="2" desc="Armor made of leather with increased agility",
+            Chainmail defense="8" agility="1" desc="Armor made of interlocking rings with moderate agility",
+            .
+        @HeavyArmor
+            PlateArmor defense="10" agility="-2" desc="Heavy armor made of plates with decreased agility",
+            FullPlateArmor defense="15" agility="-5" desc="Very heavy armor made of plates with greatly decreased agility",
+            .
+        .
+    @Consumables
+        Water healing="2" desc="Just water",
+        @Potion
+            HealthPotion healing="20" desc="A potion that restores a small amount of health",
+            GreaterHealthPotion healing="40" desc="A potion that restores a moderate amount of health",
+            ManaPotion mana_restoration="20" desc="A potion that restores a small amount of mana",
+            GreaterManaPotion mana_restoration="40" desc="A potion that restores a moderate amount of mana",
+            .
+        @Elixirs
+            ElixirOfStrength strength_boost="5" desc="An elixir that boosts strength",
+            GreaterElixirOfStrength strength_boost="10" desc="An elixir that greatly boosts strength",
+            ElixirOfAgility agility_boost="5" desc="An elixir that boosts agility",
+            GreaterElixirOfAgility agility_boost="10" desc="An elixir that greatly boosts agility",
+            .
+        .
+};
+
+println!("{}", loot);
+```
+
+```
+ROOT
+ ├─ test{}
+ ├─ Armors
+ │  ├─ Shirt{defense="0",desc="A simple shirt"}
+ │  ├─ HeavyArmor
+ │  │  └─ PlateArmor{agility="-2",defense="10",desc="Heavy armor made of plates with decreased agility"}
+ │  │     FullPlateArmor{agility="-5",defense="15",desc="Very heavy armor made of plates with greatly decreased agility"}
+ │  └─ LightArmor
+ │     └─ LeatherArmor{defense="5",desc="Armor made of leather with increased agility",agility="2"}
+ │        Chainmail{agility="1",defense="8",desc="Armor made of interlocking rings with moderate agility"}
+ ├─ Consumables
+ │  ├─ Water{desc="Just water",healing="2"}
+ │  ├─ Elixirs
+ │  │  └─ ElixirOfStrength{strength_boost="5",desc="An elixir that boosts strength"}
+ │  │     GreaterElixirOfStrength{strength_boost="10",desc="An elixir that greatly boosts strength"}
+ │  │     ElixirOfAgility{agility_boost="5",desc="An elixir that boosts agility"}
+ │  │     GreaterElixirOfAgility{desc="An elixir that greatly boosts agility",agility_boost="10"}
+ │  └─ Potion
+ │     └─ HealthPotion{desc="A potion that restores a small amount of health",healing="20"}
+ │        GreaterHealthPotion{desc="A potion that restores a moderate amount of health",healing="40"}
+ │        ManaPotion{mana_restoration="20",desc="A potion that restores a small amount of mana"}
+ │        GreaterManaPotion{desc="A potion that restores a moderate amount of mana",mana_restoration="40"}
+ └─ Weapons
+    ├─ Knife{desc="A simple knife",attack="1"}
+    ├─ Axes
+    │  └─ BattleAxe{attack="12",critical="8",desc="A battle axe with increased critical hit rate"}
+    │     WarAxe{attack="14",desc="A war axe with a high critical hit rate",critical="9"}
+    ├─ Mace
+    │  └─ MorningStar{attack="13",critical="7",desc="A mace with increased critical hit rate"}
+    │     Flail{desc="A flail with a very high critical hit rate",attack="16",critical="11"}
+    ├─ Swords
+    │  └─ ShortSword{critical="5",desc="A short sword with increased critical hit rate",attack="10"}
+    │     LongSword{desc="A long sword with a high critical hit rate",attack="15",critical="10"}
+    │     TwoHandedSword{attack="20",desc="A two-handed sword with a very high critical hit rate",critical="15"}
+    └─ Wooden
+       ├─ BarkShield{attack="0",magic_power="10",desc="A wooden shield reinforced with bark, providing magic power"}
+       ├─ Bows
+       │  └─ ShortBow{accuracy="10",attack="10",desc="A short bow with high accuracy"}
+       │     LongBow{desc="A long bow with ice elemental damage",attack="20",ice_damage="10",accuracy="20"}
+       └─ Staffs
+          └─ WoodenStaff{desc="A wooden staff imbued with magic power",magic_power="10",attack="5"}
+             CrystalStaff{ice_damage="10",desc="A crystal staff with ice elemental damage",magic_power="15",attack="8"}
+             ElementalStaff{thunder_damage="15",desc="An elemental staff with thunder elemental damage",magic_power="20",attack="12"}
+```
+
 Tests
 =====
 
