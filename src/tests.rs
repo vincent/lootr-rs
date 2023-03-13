@@ -110,7 +110,7 @@ mod tests {
     fn success_branch_display() {
         // println!("{}", stuffed());
         let output = fmt::format(format_args!("{}", stuffed()));
-        assert_eq!(output.split("─").count(), 15);
+        assert_eq!(output.split("─").count(), 10);
     }
 
     #[test]

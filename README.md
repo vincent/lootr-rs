@@ -225,6 +225,7 @@ Macros
 To make tha building easier, you can use the `bag!` macro.
 
 ```rust
+use lootr::{bag, Lootr, item::{Item, Props}};
 let loot = bag! {
     @Weapons
         Knife attack="1" desc="A simple knife",
@@ -285,7 +286,7 @@ let loot = bag! {
 println!("{}", loot);
 ```
 
-```
+```ignore
 ROOT
  ├─ test{}
  ├─ Armors
