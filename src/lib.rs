@@ -319,7 +319,7 @@ impl<'a> Lootr<'a> {
 macro_rules! a {
     ( $x:expr ) => {
         Item::name($x)
-    }
+    };
 }
 
 #[macro_export]
@@ -329,11 +329,11 @@ macro_rules! bag {
     // ($(@ $branch:ident $($item:ident $($a1:ident = $v1:expr) *,);* |)*) => { // OK
     // ($(@ $branch:ident $($item:ident $($a1:ident = $v1:expr) *,);* $(@ $b2:ident $($i2:ident $($a2:ident = $v2:expr) *,);* |)* |)*) => { // OK
     ($
-        (@ $b1:ident $($i1:ident $($a1:ident = $v1:expr) *,)* 
+        (@ $b1:ident $($i1:ident $($a1:ident = $v1:expr) *,)*
             $(@ $b2:ident $($i2:ident $($a2:ident = $v2:expr) *,)*
                 $(@ $b3:ident $($i3:ident $($a3:ident = $v3:expr) *,)*
                 .)*
-            .)* 
+            .)*
         .)*
     ) => {
         {
@@ -353,7 +353,7 @@ macro_rules! bag {
 
                 $( // for each $b2
                     let mut b2 = Lootr::new();
-    
+
                     $( // for each $i1
                         let mut i2 = Item::named(stringify!($i2));
                         $( // for each $a1
@@ -364,16 +364,16 @@ macro_rules! bag {
 
                     $( // for each $b3
                         let mut b3 = Lootr::new();
-        
+
                         $( // for each $i3
-        
+
                             let mut i3 = Item::named(stringify!($i3));
                             $( // for each $a3
                                 i3.set_prop(stringify!($a3), stringify!($v3));
                             )*
                             b3.add(i3);
                         )*
-        
+
                         b2.add_branch(stringify!($b3), b3);
                     )*
                     b1.add_branch(stringify!($b2), b2);

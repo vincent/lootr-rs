@@ -1,9 +1,10 @@
 #[cfg(test)]
 mod tests {
     use crate::{
+        bag,
         drops::{Drop, DropBuilder},
         item::Props,
-        Item, Lootr, ROOT, bag
+        Item, Lootr, ROOT,
     };
     use rand::SeedableRng;
     use rand_chacha::ChaCha20Rng;
@@ -100,7 +101,7 @@ mod tests {
                     .
                 .
         };
-        
+
         println!("{}", loot);
         assert_eq!(loot.all_count(), 29);
     }
